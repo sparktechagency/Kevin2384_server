@@ -35,9 +35,9 @@ export class AuthService {
             throw new BadRequestException("credentials are not matched!")
         }
 
-        if(!user.email_verified){
-            return {email_verification:false, message:"Your email is unverified! Kindly verify your email."}
-        }
+        // if(!user.email_verified){
+        //     return {email_verified:false, message:"Your email is unverified! Kindly verify your email."}
+        // }
 
         return this.userToUserDtoMapper(user)
 
