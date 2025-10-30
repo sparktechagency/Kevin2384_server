@@ -21,11 +21,11 @@ jobs:
 
       - name: Build project
         run: npm run build
-        
+
       - name: Push build to build branch
         run: |
           # Clone build branch into temp folder
-          git clone --branch build https://github.com/${{ github.repository }} build-temp
+          git clone --branch build https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build-temp
           rm -rf build-temp/*          # Clear old files
           cp -r dist/* build-temp/     # Copy new build files
 
