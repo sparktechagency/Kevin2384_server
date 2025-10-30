@@ -29,3 +29,9 @@ jobs:
             name: build-artifacts
             path: |
               dist/**
+        - name: Download Artifacts
+          uses: actions/download-artifact@v4
+          with:
+            name: build-artifacts
+            path: ./build
+
