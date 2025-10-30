@@ -14,39 +14,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Install dependencies
-      - name: Install dependencies
-        run: npm i
-
-      # 3️⃣ Build project
-      - name: Build project
-        run: npm run build
-
-      # 4️⃣ Configure Git
-      - name: Configure Git
+      - name: logging
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-      # 5️⃣ Push build artifacts to build branch
-      - name: Push build artifacts
+            ls
+            echo "Build job completed."
+      - name: build
+        run : npm run build
+      - name: console again
         run: |
-          # Clone the repo locally
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build-temp
-          cd build-temp
-
-          # Check if build branch exists
-          if git ls-remote --heads origin build | grep build; then
-            git checkout build
-          else
-            git checkout --orphan build
-            git rm -rf .
-          fi
-
-          # Copy build artifacts
-          cp -r ../dist/* .
-
-          # Commit and push
-          git add .
-          git commit -m "Build update from ${{ github.sha }}" || echo "No changes to commit"
-          git push origin build --force
+            ls
+            echo "Build job completed again."
