@@ -24,10 +24,10 @@ jobs:
 
       - name: Push build to build branch
         run: |
-          if git ls-remote --heads https://github.com/${{ github.repository }} build; then
-            git clone --branch build https://github.com/${{ github.repository }} build-temp
+          if git ls-remote --heads https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build; then
+            git clone --branch build https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build-temp
           else
-            git clone https://github.com/${{ github.repository }} build-temp
+            git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build-temp
             cd build-temp
             git checkout --orphan build
             git rm -rf .
