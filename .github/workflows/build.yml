@@ -1,36 +1,52 @@
-name: "Build the project"
+name: Build and Push Artifacts
+
 on:
   push:
     branches:
-      - main
+      - main  # Trigger on changes to main
 
 jobs:
-  deploy:   
+  build:
     runs-on: ubuntu-latest
+
     steps:
+      # 1️⃣ Checkout source code
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '22'
-        
+      # 2️⃣ Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
+      # 3️⃣ Build project
       - name: Build project
         run: npm run build
 
-      - name: Push build to build branch
+      # 4️⃣ Configure Git
+      - name: Configure Git
         run: |
-          # Clone build branch into temp folder
-          mkdir build-temp
-          cp -r dist/* build-temp/     # Copy new build files
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
+      # 5️⃣ Push build artifacts to build branch
+      - name: Push build artifacts
+        run: |
+          # Clone the repo locally
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build-temp
           cd build-temp
+
+          # Check if build branch exists
+          if git ls-remote --heads origin build | grep build; then
+            git checkout build
+          else
+            git checkout --orphan build
+            git rm -rf .
+          fi
+
+          # Copy build artifacts
+          cp -r ../dist/* .
+
+          # Commit and push
           git add .
           git commit -m "Build update from ${{ github.sha }}" || echo "No changes to commit"
-          git push origin build
-
-        
+          git push origin build --force
