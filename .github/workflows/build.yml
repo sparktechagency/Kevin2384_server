@@ -24,10 +24,15 @@ jobs:
 
       - name: Push build to build branch
         run: |
-          # Clone build branch into temp folder
-          git clone --branch build https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} build-temp
-          rm -rf build-temp/*          # Clear old files
-          cp -r dist/* build-temp/     # Copy new build files
+          if git ls-remote --heads https://github.com/${{ github.repository }} build; then
+            git clone --branch build https://github.com/${{ github.repository }} build-temp
+          else
+            git clone https://github.com/${{ github.repository }} build-temp
+            cd build-temp
+            git checkout --orphan build
+            git rm -rf .
+            cd ..
+            fi
 
           cd build-temp
           git add .
