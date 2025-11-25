@@ -25,10 +25,12 @@ model User {
   role                  UserRole
   email_verified        Boolean              @default(false)
   is_deleted            Boolean              @default(false)
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
   participated_sessions SessionParticipant[]
   created_sessions      Session[]
+
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  
 
   @@map("users")
 }
@@ -44,6 +46,7 @@ model Session {
   address             String
   participant_min_age Int
   started_at           DateTime
+  completed_at         DateTime
   max_participants    Int
   fee                 Float
   status               SessionStatus @default(CREATED)
@@ -54,6 +57,9 @@ model Session {
   participants SessionParticipant[]
 
   refund_requests   RefundRequest[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@map("sessions")
 }
@@ -70,6 +76,9 @@ model SessionParticipant {
   player  User    @relation(references: [id], fields: [player_id], onDelete: Cascade)
   refund_request RefundRequest?
 
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
   @@map("session_participants")
 }
 
@@ -82,7 +91,23 @@ model RefundRequest {
   participant  SessionParticipant  @relation(references: [id], fields: [participant_id])
   session      Session    @relation(references: [id], fields: [session_id])
 
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
   @@map("refund_requests")
+}
+
+model SessionCancelRequest {
+  id        String  @id  @default(auto())  @map("_id")  @db.ObjectId
+  reason    String
+  session_id  String  @db.ObjectId
+  participant_id  String  @db.ObjectId
+  sataus      SessionCancelRequestStatus  @default(Pending)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("cancel_requests")
 }
 
 model Otp {
@@ -92,6 +117,7 @@ model Otp {
   email      String
   expires_in DateTime
   otp_status OtpStatus @default(CREATED)
+
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -113,12 +139,20 @@ enum RefundRequestStatus {
   Pending
   Completed
   Cancelled
-
+  Accepted
 }
+
+enum SessionCancelRequestStatus {
+  Pending
+  Accepted
+  Cancelled
+}
+
 enum SessionStatus {
   CREATED
   ONGOING
   COMPLETED
+  CANCELLED
 }
 
 enum OtpStatus {

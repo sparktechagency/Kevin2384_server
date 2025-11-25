@@ -85,15 +85,20 @@ export class SessionBuilder{
 
     }
 
-    setDateTime(date:string, time:string){
+    setStartTime(date:string, time:string){
 
         const [hours, minutes] = this.getTimeParts(time)
         const startedDate = new Date(date).setUTCHours(hours + this.getTimeZoneOffset() , minutes + this.getTimeZoneOffset())
 
         this.session.started_at = new Date(startedDate)
+        
+        // set completed time after 24 hour from start 
+        this.session.completed_at = new Date(startedDate + 24 * 60 * 60 * 1000)
 
         return this
     }
+
+
 
     private getTimeParts(time:string){
         const [splittedTime, ampm] = time.split(" ")

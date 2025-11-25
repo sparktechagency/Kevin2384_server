@@ -8,6 +8,7 @@ import mailerConfig from './config/mailer.config';
 import { JwtGuard } from './modules/auth/guards/jwt.guard';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { RefundModule } from './modules/refund/refund.module';
 
 
 @Module({
@@ -15,7 +16,8 @@ import { JwtService } from '@nestjs/jwt';
     ConfigModule.forRoot({isGlobal:true,load:[mailerConfig]}),
     UserModule,
     AuthModule,
-    SessionModule
+    SessionModule,
+    RefundModule
   ],
   controllers: [AppController],
   providers: [

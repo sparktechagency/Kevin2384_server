@@ -28,6 +28,7 @@ export class AuthController {
     }
 
     @Post("register")
+    @Public()
     @ResponseMessage("user register successfully")
     async registerUser(@Body() registerDto:RegisterUserDto){
         const message = await this.authService.registerUser(registerDto)
@@ -36,6 +37,7 @@ export class AuthController {
     }
 
     @Post("verify-email")
+    @Public()
     @ResponseMessage("email verified successfully")
     async verifyEmail(@Body() verifyEmailDto:VerifyEmailDto){
 
@@ -45,6 +47,7 @@ export class AuthController {
     }
 
     @Post("resend-code")
+    @Public()
     @ResponseMessage("code resent successfully")
     async resendCode(@Body() resednCodeDto:ResendCodeDto){
         const message = await this.authService.resendEmailVerificationCode(resednCodeDto.email)

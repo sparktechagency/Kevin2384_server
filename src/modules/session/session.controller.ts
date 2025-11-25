@@ -10,6 +10,9 @@ import { PaginationDto } from "src/common/dtos/pagination.dto";
 import { CoachSessionDto } from "./dtos/get-upcoming-session.dto";
 import { CoachUpcomingSessionResponseDto } from "./dtos/upcoming-session-response.dto";
 import { SessionQueryDto } from "./dtos/session-query.dto";
+import { EnrollSessionDto } from "./dtos/enroll-session.dto";
+import { CancelSessionDto } from "./dtos/cancel-session.dto";
+import { UserRole } from "generated/prisma/enums";
 
 @Controller({path:"sessions"})
 export class SessionController {
@@ -66,6 +69,25 @@ export class SessionController {
     }
 
     
+    @Post("join")
+    @ResponseMessage("User enrolled successfully")
+    async enrollSession(@Req() request:Request, @Body() enrollSessionDto:EnrollSessionDto){
+        const tokenPayload = request['payload'] as TokenPayload
+
+        const enrollResult = await this.sessionService.enrollSession(tokenPayload.id, enrollSessionDto)
+
+        return enrollResult
+    }
+
+    @Post("/cancel")
+    @ResponseMessage("session cancelled successfully")
+    async cancelSession(@Req() request:Request, @Body() cancelSessionDto:CancelSessionDto){
+
+        const tokenPayload = request['payload'] as TokenPayload
+        
+        return await this.sessionService.cancelSession(tokenPayload.id, cancelSessionDto)
+            
+    }
 
     
 

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { SessionBuilder } from "./providers/SessionBuilder.provider";
 import { CreateSessionDto } from "./dtos/create-session.dto";
 import { PrismaService } from "../prisma/prisma.service";
@@ -9,14 +9,26 @@ import { GetEnrolledPlayerDto } from "./dtos/get-enrolled-player.dto";
 import { ParticipantPaymentStatus, PaymentMethod, SessionStatus } from "generated/prisma/enums";
 import { EnrollSessionDto } from "./dtos/enroll-session.dto";
 import { UpdateSessionDto } from "./dtos/update-session.dto";
-import { Session } from "generated/prisma/client";
-import { DeleteSessionDto } from "./dtos/delete-session.dto";
+import { CancelSessionDto } from "./dtos/cancel-session.dto";
 import { SessionQueryDto } from "./dtos/session-query.dto";
+import type { SessionCancelStrategy } from "./strategies/SessionCancelStrategy.interface";
+import { CoachCancelStrategy } from "./strategies/CoachCancelStrategy";
+import { PlayerCancelStrategy } from "./strategies/PlayerCancelStrategy";
 
 @Injectable()
 export class SessionService {
 
-    constructor (private readonly sessionBuilder:SessionBuilder, private readonly prismaService:PrismaService){}
+    constructor (
+        private readonly sessionBuilder:SessionBuilder,
+        private readonly prismaService:PrismaService,
+
+        @Inject(CoachCancelStrategy.INJECTION_KEY)
+        private readonly coachCancelStrategy:SessionCancelStrategy,
+
+        @Inject(PlayerCancelStrategy.INJECTION_KEY)
+        private readonly playerCancelStrategy:SessionCancelStrategy
+
+    ){}
 
     
     /**
@@ -43,7 +55,7 @@ export class SessionService {
         .setFee(createSessionDto.fee)
         .setMaxParticipant(createSessionDto.max_participants)
         .setMinimumAge(createSessionDto.min_age)
-        .setDateTime(createSessionDto.start_date, createSessionDto.start_time)
+        .setStartTime(createSessionDto.start_date, createSessionDto.start_time)
         .setBanner(file)
         .setAddress(createSessionDto.address)
     
@@ -59,7 +71,10 @@ export class SessionService {
         const skip = ( sessionQuery.page - 1 ) * sessionQuery.limit
 
 
-        const sessions = await this.prismaService.session.findMany({where:{title:{contains:sessionQuery.query}}, skip, take:sessionQuery.limit})
+        const sessions = await this.prismaService.session.findMany({
+            where:{title:{contains:sessionQuery.query}, status:SessionStatus.CREATED}, 
+            skip, 
+            take:sessionQuery.limit})
 
   
 
@@ -85,7 +100,7 @@ export class SessionService {
         const skip = (pagination.page - 1) * pagination.limit
 
         const sessions = await this.prismaService.session.findMany({
-            where:{coach_id:coachId}, 
+            where:{coach_id:coachId, started_at:upcomingWindow, status:SessionStatus.CREATED},
             orderBy:{started_at:"desc"}, 
             skip, 
             take:pagination.limit,
@@ -187,6 +202,7 @@ export class SessionService {
         }
 
         const updatedData: Record<string, any> = {
+
             title: updateSessionDto.title ?? session.title,
             description: updateSessionDto.description ?? session.description,
             equipments: updateSessionDto.equipments ?? session.equipments,
@@ -211,10 +227,39 @@ export class SessionService {
         return updatedSession
 
     }
+    
+    /**
+     * 
+     * @param userId 
+     * @param cancelSessionDto 
+     * @returns 
+     */
 
-    async deleteSession (userId:string, deleteSessionDto:DeleteSessionDto){
+    async cancelSession(userId:string, cancelSessionDto:CancelSessionDto){
 
-        const session = await this.prismaService.session.findFirst({where:{id:deleteSessionDto.sessionId}})
+        const user = await this.prismaService.user.findUnique({where:{id:userId}})
+
+        if(!user){
+            throw new NotFoundException("user not found")
+        }
+
+        if(user.role  === "COACH"){
+            return await this.cancelSessionByCoach(user.id, cancelSessionDto)
+        }
+
+        return await this.cancelEnrolledSessionByPlayer(user.id, cancelSessionDto)
+    }
+
+
+    /**
+     * 
+     * @param userId 
+     * 
+     * @param cancelSessionDto 
+     */
+    async cancelSessionByCoach (userId:string, cancelSessionDto:CancelSessionDto){
+
+        const session = await this.prismaService.session.findFirst({where:{id:cancelSessionDto.sessionId}, include:{participants:true}})
 
         if(!session){
             throw new NotFoundException("session not found")
@@ -224,17 +269,40 @@ export class SessionService {
             throw new UnauthorizedException("Sorry!, you are not allowed to delete this session.")
         }
 
-        const deletedSession = await this.prismaService.session.delete({where:{id:session.id}})
+        
+        if(session.started_at <= new Date(Date.now())){
+            throw new BadRequestException("Sorry! This session can not be cancelled")
+        }
 
-        //If there are any participant already enrolled:
-        //notify user that there enrolled session is deleted
+        //invoke coach cancelStrategy to handle session cancellation request
+        await this.coachCancelStrategy.handleCancelRequest(userId,session, session.participants)
 
-        // create refund request for the participated user
-
-
-        return deletedSession
 
     }
+
+    /**
+     * 
+     * @param userId 
+     * @param cancelSessionDto 
+     */
+
+    async cancelEnrolledSessionByPlayer (userId:string, cancelSessionDto:CancelSessionDto){
+
+        const session = await this.prismaService.session.findFirst({where:{id:cancelSessionDto.sessionId}, include:{participants:{where:{player_id:userId}}}})
+
+        if(!session){
+            throw new NotFoundException("session not found")
+        }
+
+        if(session.participants.length <= 0){
+            throw new BadRequestException("Sorry! you are not enrolled yet.")
+        }
+
+        //invoke player cancelStrategy to handle session cancellation request
+        await this.playerCancelStrategy.handleCancelRequest(userId,session, session.participants[0])
+
+    }
+
 
     /**
      * A player enroll a session if
@@ -251,7 +319,9 @@ export class SessionService {
      */
     async enrollSession(playerId:string, enrollSessionDto:EnrollSessionDto){
 
-        if(!(await this.isASessionValidToJoin(enrollSessionDto.sessionId))){
+        
+
+        if(!(await this.isSessionValidToJoin(playerId, enrollSessionDto.sessionId))){
             throw new BadRequestException("session does not exist or no slot available")
         }
 
@@ -321,7 +391,7 @@ export class SessionService {
      * @param sessionId 
      * @returns 
      */
-    private async isASessionValidToJoin(sessionId:string){
+    private async isSessionValidToJoin(playerId:string, sessionId:string){
 
         const session = await this.prismaService.session.findUnique({
 
@@ -336,9 +406,10 @@ export class SessionService {
             }}}
         })
 
-        return session && session._count.participants < session.max_participants ? true: false
+        return session && session.coach_id !== playerId && session._count.participants < session.max_participants
 
     }
+    
 
     /**
      * 
