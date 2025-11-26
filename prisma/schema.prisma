@@ -27,6 +27,10 @@ model User {
   is_deleted            Boolean              @default(false)
   participated_sessions SessionParticipant[]
   created_sessions      Session[]
+  stripe_customer_id    String?
+
+  sent_chats          Chat[]  @relation(name: "sent_chats")
+  received_chats      Chat[]  @relation(name: "received_chats")
 
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
@@ -117,11 +121,29 @@ model Otp {
   email      String
   expires_in DateTime
   otp_status OtpStatus @default(CREATED)
+  data       Json?
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
   @@map("otps")
+}
+
+model Chat {
+  id      String  @id  @default(auto()) @map("_id") @db.ObjectId
+  message String
+  files  String[]
+  hasFile  Boolean  @default(false)
+  sender_id  String  @db.ObjectId
+  receiver_id  String @db.ObjectId
+  is_read  Boolean  @default(false)
+
+  sender   User  @relation(references: [id], fields: [sender_id], name: "sent_chats")
+  receiver  User @relation(references: [id], fields: [receiver_id], name: "received_chats")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
 }
 
 enum UserRole {
@@ -181,4 +203,5 @@ enum PlayerStatus {
 enum OtpFor {
   Forget_Password
   Email_Verification
+  Change_Email
 }

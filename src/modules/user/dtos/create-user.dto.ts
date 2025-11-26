@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer"
-import { IsEmail, IsIn, IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator"
+import { IsEmail, IsIn, IsNotEmpty, IsString, MinLength } from "class-validator"
 import { UserRole } from "generated/prisma/enums"
 
 

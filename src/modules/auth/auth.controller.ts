@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Post, Req } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { SigninDto } from "./dtos/signin.dto";
 import { RegisterUserDto } from "./dtos/register-user.dto";
@@ -8,6 +8,8 @@ import { ResponseMessage } from "src/common/decorators/apiResponseMessage.decora
 import { plainToInstance } from "class-transformer";
 import { SignInResponseDto } from "./dtos/sign-in-response.dto";
 import { Public } from "src/common/decorators/public.decorator";
+import { TokenPayload } from "./types/TokenPayload.type";
+import { UserResponseDto } from "../user/dtos/user-response.dto";
 
 @Controller({
     path:"auth"
@@ -55,8 +57,17 @@ export class AuthController {
         return message
     }
 
-    async deleteAccount(@Req() request:Request){
-        
+  
+    @Get("me")
+    @ResponseMessage("User details fethced successfully")
+    async getAuthenticatedUser(@Req() request:Request){
+        const tokenpayload = request["payload"] as TokenPayload
+
+        const userDetails = await this.authService.getAuthenticatedUser(tokenpayload.id)
+
+        return plainToInstance(UserResponseDto, userDetails, {
+            excludeExtraneousValues: true
+        })
     }
 
 }

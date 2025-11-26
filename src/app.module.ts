@@ -6,9 +6,12 @@ import { AuthModule } from './modules/auth/auth.module';
 import { SessionModule } from './modules/session/session.module';
 import mailerConfig from './config/mailer.config';
 import { JwtGuard } from './modules/auth/guards/jwt.guard';
-import { APP_GUARD, Reflector } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { RefundModule } from './modules/refund/refund.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 
 @Module({
@@ -17,14 +20,18 @@ import { RefundModule } from './modules/refund/refund.module';
     UserModule,
     AuthModule,
     SessionModule,
-    RefundModule
+    RefundModule,
+    PaymentModule,
+    ChatModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [
     JwtService,
     { provide: APP_GUARD, useClass: JwtGuard },
-
+    
   ],
+
   
 })
 export class AppModule {}

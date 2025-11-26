@@ -30,11 +30,7 @@ export class AuthService {
         if(!user){
             throw new NotFoundException("No account is associated with this email address. Please sign up first.")
         }
-        //Not required
-
-        // if(user.role !== signInDto.role){
-        //     throw new BadRequestException("you are not registered in this role")
-        // }
+        
 
         if(! (await this.comparePassword(signInDto.password, user.password))){
 
@@ -148,6 +144,14 @@ export class AuthService {
         const deletedUser = await this.userService.deleteUserById(user.id)
 
         return deletedUser
+    }
+
+    async getAuthenticatedUser(userId:string){
+
+        const userDetails = await this.userService.findUserById(userId)
+
+        return userDetails
+        
     }
 
 

@@ -3,16 +3,23 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import  {GlobalHttpExceptionHandler}  from './common/exceptions/GlobalHttpExceptionHandler';
 import { ResponseTransformerInterceptor } from './common/interceptors/responseTransformer.interceptor';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
 
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:["debug", "error", "warn", "fatal","verbose", "log"]
   });
 
   app.setGlobalPrefix("/api/v1", {
     exclude:["/"]
   })
+
+  const staticFilePath = join(__dirname, '..', 'uploads')
+
+
+  app.useStaticAssets(staticFilePath, {prefix:'/uploads'})
 
 
   app.useGlobalPipes(new ValidationPipe({
