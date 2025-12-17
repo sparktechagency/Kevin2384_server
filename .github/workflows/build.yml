@@ -19,6 +19,9 @@ jobs:
               uses: actions/setup-node@v2
               with:
                 node-version: '22'
+            - name: Install Pnpm
+              run: curl -fsSL https://get.pnpm.io/install.sh | sh -
+            
             - name: Install dependencies
               run: pnpm i
 
