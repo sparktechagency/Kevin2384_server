@@ -12,11 +12,11 @@ export class PlayerCancelStrategy implements SessionCancelStrategy {
         private readonly refundRequestResolver:RefundRequestResolver
 ){}
 
-    async handleCancelRequest(userId: string, session: Session, participant:SessionParticipant): Promise<void> {
+    async handleCancelRequest(userId: string, session: Session, participant:SessionParticipant, reason:string): Promise<void> {
         
 
         if(participant.payment_method === 'ONLINE' && participant.payment_status === "Paid"){
-            await this.refundRequestResolver.resolveRefundRequest(participant.id, session)
+            await this.refundRequestResolver.resolveRefundRequest(participant.id, session, reason)
         }
             
         

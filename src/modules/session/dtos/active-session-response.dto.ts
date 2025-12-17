@@ -7,9 +7,7 @@ export class ActiveSessionResponseDto extends PaginationResponseDto{
     
     @Expose()
     @Type(() => SessionResponseDto)
-    @ValidateNested({each:true})
+    @ValidateNested()
     sessions:SessionResponseDto[]
 
-    @Expose()
-    total:number
 }

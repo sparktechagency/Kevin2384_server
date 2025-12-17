@@ -1,3 +1,4 @@
+import { SessionType } from "generated/prisma/enums"
 
 
 export type LocationCords  = {
@@ -34,6 +35,8 @@ export class Session{
 
     started_at:Date
     completed_at:Date
+
+    type: SessionType
 
 
 }

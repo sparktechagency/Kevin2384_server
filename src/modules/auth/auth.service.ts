@@ -8,7 +8,7 @@ import { OtpFor, OtpStatus } from "generated/prisma/browser";
 import { PrismaService } from "../prisma/prisma.service";
 import emailVerificationTemplate from "src/common/templates/emailVerification.template";
 import { JwtService } from "@nestjs/jwt";
-import { User } from "generated/prisma";
+import { User } from "generated/prisma/client";
 
 
 
@@ -72,6 +72,8 @@ export class AuthService {
      */
 
     async adminSignIn(signInDto:SigninDto){
+
+        console.log("Admin sign in: ", signInDto)
 
         const user = await this.userService.findUserByEmail(signInDto.email)
         if(!user){

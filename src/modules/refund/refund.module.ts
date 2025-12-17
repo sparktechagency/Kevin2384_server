@@ -3,6 +3,8 @@ import { RefundRequestResolver } from './providers/RefundRequestResolver.provide
 import { RefundAutoAcceptedStrategy } from './strategies/RefundAutoAccepted.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminApprovalStrategy } from './strategies/AdminApprovalRefundRequest.strategy';
+import { RefundController } from './refund.controller';
+import { RefundService } from './refund.service';
 
 @Module({
     providers:[
@@ -16,7 +18,9 @@ import { AdminApprovalStrategy } from './strategies/AdminApprovalRefundRequest.s
             useClass: AdminApprovalStrategy
         },
         RefundRequestResolver,
+        RefundService
     ],
+    controllers:[RefundController],
     exports:[RefundRequestResolver]
 })
 export class RefundModule {}

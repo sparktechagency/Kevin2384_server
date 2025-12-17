@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { LocationCords, Session } from "../models/Session.model";
+import { SessionType } from "generated/prisma/enums";
 
 
 export class SessionBuilder{
@@ -10,6 +11,15 @@ export class SessionBuilder{
         this.session = new Session()
     
        }
+
+    setType (type?:SessionType){
+        if(type)
+            this.session.type = type
+        else 
+            this.session.type = SessionType.Paid
+
+        return this
+    }
 
     setCoach(coachId:string){
         this.session.coach_id = coachId
@@ -111,7 +121,10 @@ export class SessionBuilder{
     }
     private getTimeParts(time:string){
         const [splittedTime, ampm] = time.split(" ")
-        return splittedTime.split(":").map(part => Number(part))
+        let [hour, minutes] = splittedTime.split(":").map(part => Number(part))
+        if(ampm == "PM")
+           hour = Math.min( hour += 12, 23)
+        return [hour, minutes]
     }
 
     private getDateParts(date:string){

@@ -8,6 +8,9 @@ import { PlayerCancelStrategy } from './strategies/PlayerCancelStrategy';
 import { RefundModule } from '../refund/refund.module';
 import { UserService } from '../user/user.service';
 import { UserModule } from '../user/user.module';
+import { SessionScheduler } from './scheduler/session.scheduler';
+import { PaymentService } from '../payment/payment.service';
+import { StripeProvider } from '../payment/providers/stripe.provider';
 
 @Module({
     imports:[RefundModule, UserModule],
@@ -16,6 +19,9 @@ import { UserModule } from '../user/user.module';
         SessionService,
         SessionBuilder,
         PrismaService,
+        SessionScheduler,
+        PaymentService,
+        StripeProvider,
         {
             provide: CoachCancelStrategy.INJECTION_KEY,
             useClass: CoachCancelStrategy

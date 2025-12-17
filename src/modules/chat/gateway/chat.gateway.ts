@@ -170,7 +170,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     
         if(socketRoomId){
             this.server.to(socketRoomId).emit(EMIT_EVENTS.ALL_CHAT_ROOMS, {
-                roomDto
+                ...roomDto
             })
         }
     }
@@ -189,7 +189,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
         if(socketRoomId){
             this.server.to(socketRoomId).emit(EMIT_EVENTS.ALL_MESSAGES, {
-                messageDto
+                ...messageDto
             })
         }
     }

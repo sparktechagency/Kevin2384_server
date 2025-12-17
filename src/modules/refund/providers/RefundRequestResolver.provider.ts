@@ -19,15 +19,15 @@ export class RefundRequestResolver {
         private readonly adminApprovalRefundRequest:RefundStrategy
     ){}
 
-    async resolveRefundRequest(participantId:string, session:Session){
+    async resolveRefundRequest(participantId:string, session:Session, reason:string){
 
 
         if(session.status === SessionStatus.CANCELLED || session.status === SessionStatus.CREATED){
-            await this.refundAutoAccepted.handleRefundRequest(participantId, session)
+            await this.refundAutoAccepted.handleRefundRequest(participantId, session, reason)
         }
 
         if(session.status === SessionStatus.ONGOING || session.status === SessionStatus.COMPLETED){
-            await this.adminApprovalRefundRequest.handleRefundRequest(participantId, session)
+            await this.adminApprovalRefundRequest.handleRefundRequest(participantId, session, reason)
         }
 
     }

@@ -6,14 +6,20 @@ import { ResponseTransformerInterceptor } from './common/interceptors/responseTr
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
+
 async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:["debug", "error", "warn", "fatal","verbose", "log"]
   });
 
+
   app.setGlobalPrefix("/api/v1", {
     exclude:["/"]
+  })
+
+  app.enableCors({
+    origin:"*"
   })
 
 //   app.useGlobalInterceptors(

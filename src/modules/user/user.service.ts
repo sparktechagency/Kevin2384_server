@@ -149,12 +149,19 @@ export class UserService{
 
 
       const [users, total] = await this.prismaService.$transaction([
-        this.prismaService.user.findMany({where:{...queryBuilder}, skip, take:query.limit}),
+        this.prismaService.user.findMany({where:{...queryBuilder}, skip, take:query.limit, include:{subscriptions:{orderBy:{createdAt:"desc"}, take:1}, _count:{select:{created_sessions:true}}}}),
         this.prismaService.user.count({where:{...queryBuilder}})
       ])
 
+      const mappedUsers = users.map(user => {   
+        const {subscriptions, _count, ...rest} = user
+        const isSubscriptionActive = subscriptions.some(sub => sub.status === "ACTIVE")
+        const current_subscription_end_at = isSubscriptionActive ? subscriptions[0].current_period_end : null 
+        return {...rest, is_subscription_active:isSubscriptionActive,current_subscription_end_at, total_created_sessions:_count.created_sessions}
+      })
 
-      return {users, page:query.page, limit:query.limit, total, pages:Math.ceil(total / query.limit)}
+
+      return {users:mappedUsers, page:query.page,limit:query.limit, total, pages:Math.ceil(total / query.limit)}
 
     }
 
@@ -526,6 +533,27 @@ export class UserService{
         const emailTemplate = emailVerificationTemplate({name,verificationCode:code, verificationCodeExpire:otpExpiryMinute})
 
         this.smtpProvider.sendMail(email, "Verification code for change email", emailTemplate)
+    }
+
+    /**
+     * 
+     * @param userId 
+     * @param reason 
+     */
+    async warnUser(adminId:string, userId:string, reason:string){
+        const adminUser = await this.prismaService.user.findUnique({where:{id:adminId}})
+
+        if(!adminUser || adminUser.role !== UserRole.ADMIN){
+            throw new NotFoundException("Admin user not found")
+        }
+        const user = await this.prismaService.user.findUnique({where:{id:userId}})
+
+        if(!user){
+            throw new NotFoundException("User not found")
+        }
+
+        console.log(`User ${user.fullName} has been warned by Admin ${adminUser.fullName} for reason: ${reason}`)
+       
     }
 
 }

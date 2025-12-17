@@ -24,6 +24,7 @@ import { PlayerEnrolledSessionDto } from "./dtos/player-enrolled-session-respons
 import { SessionDetailsParamsDto } from "./dtos/session-details-params.dto";
 import { AvailableSessionResponseDto } from "./dtos/available-sesion-response.dto";
 import { ActiveSessionResponseDto } from "./dtos/active-session-response.dto";
+import { AdminSessionResponseDto } from "./dtos/admin-session-response.dto";
 
 @Controller({path:"sessions"})
 export class SessionController {
@@ -31,7 +32,7 @@ export class SessionController {
     constructor(private readonly sessionService:SessionService){}
 
     @UseInterceptors(FileInterceptor("banner", {
-        limits: { files: 1, fileSize:1000000 },
+        limits: { files: 1 },
         storage: diskStorage({
             destination:'./uploads/session_banner',
             filename:(req, file, callback) => {
@@ -48,6 +49,8 @@ export class SessionController {
     @Roles(UserRole.COACH)
     async createSession(@Body() createSessionDto:CreateSessionDto, @Req() request:Request, @UploadedFile() banner:Express.Multer.File){
         const payload = request['payload'] as TokenPayload
+
+        console.log("Create session: ",createSessionDto)
         
         const createdSession = await this.sessionService.createSession(payload.id, createSessionDto, banner)
 
@@ -210,13 +213,13 @@ export class SessionController {
             
     }
 
-    @Get("enrolled-players")
+    @Get("enrolled-players/:sessionId")
     @ResponseMessage("Enrolled players fetched successfully")
     @Roles(UserRole.COACH)
-    async getEnrolledPlayers(@Req() request:Request, @Query() paginationDto:PaginationDto){
+    async getEnrolledPlayers(@Req() request:Request,@Param("sessionId") sessionId:string, @Query() paginationDto:PaginationDto){
         const tokenPayload = request["payload"] as TokenPayload
      
-        const enrolledPlayers = await this.sessionService.getEnrolledPlayers(tokenPayload.id, paginationDto)
+        const enrolledPlayers = await this.sessionService.getEnrolledPlayers(tokenPayload.id,sessionId, paginationDto)
 
         return plainToInstance(GetEnrolledPlayerResponseDto, enrolledPlayers, {
             excludeExtraneousValues: true,
@@ -231,13 +234,13 @@ export class SessionController {
      * @returns 
      */
 
-    @Get("cancelled-players")
+    @Get("cancelled-players/:sessionId")
     @ResponseMessage("Cancelled players fetched successfully")
     @Roles(UserRole.COACH)
-    async getCancelledPlayers(@Req() request:Request, @Query() paginationDto:PaginationDto){
+    async getCancelledPlayers(@Req() request:Request,@Param("sessionId") sessionId:string, @Query() paginationDto:PaginationDto){
         const tokenPayload = request["payload"] as TokenPayload
      
-        const enrolledPlayers = await this.sessionService.getCancelledPlayer(tokenPayload.id, paginationDto)
+        const enrolledPlayers = await this.sessionService.getCancelledPlayer(tokenPayload.id,sessionId, paginationDto)
 
         return plainToInstance(GetEnrolledPlayerResponseDto, enrolledPlayers, {
             excludeExtraneousValues: true,
@@ -271,8 +274,7 @@ export class SessionController {
     async getSessionDetailsById(@Req() request:Request, @Param() params:SessionDetailsParamsDto){
 
         const tokenPayload = request['payload'] as TokenPayload
-        console.log("params", params)
-
+   
         const session = await this.sessionService.getSessionDetailsById(tokenPayload.id, params.sessionId)
 
         if(session.coach.id === tokenPayload.id){
@@ -296,6 +298,19 @@ export class SessionController {
             groups:["public"]
         })
     }
+
+    @Get("admin/all")
+    @Roles(UserRole.ADMIN)
+    @ResponseMessage("All sessions fetched successfully")
+    async getAllSessions(@Query() query:SessionQueryDto){
+
+        const sessions = await this.sessionService.getAllSessions(query)
+    
+        return plainToInstance(AdminSessionResponseDto, sessions, {
+            excludeExtraneousValues:true,
+            groups:["admin"]
+        })
+    }    
 
     
 }

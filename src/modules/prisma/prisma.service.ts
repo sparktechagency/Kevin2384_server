@@ -5,6 +5,7 @@ import { PrismaClient } from "generated/prisma/client";
 
 @Injectable()
 export class PrismaService extends PrismaClient  implements OnModuleInit, OnModuleDestroy{
+    
 
     private readonly logger = new Logger(PrismaService.name)
 

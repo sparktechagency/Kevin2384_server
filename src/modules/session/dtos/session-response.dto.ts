@@ -1,13 +1,14 @@
 import { Expose, Transform, Type } from "class-transformer"
 import { CoachResponseDto } from "./coach-response.dto"
 import { ValidateNested } from "class-validator"
+import { SessionType } from "generated/prisma/enums"
 
 
 
 export class SessionResponseDto {
 
     @Expose({
-        groups:["public", "short"]
+        groups:["public", "short", "admin"]
     })
     id:string
 
@@ -25,26 +26,27 @@ export class SessionResponseDto {
     banner:string
 
     @Expose({
-        groups:["public", "short"]
+        groups:["public", "short", "admin"]
     })
     started_at:string
+
 
     @Expose({groups:["public", "short"]})
     title:string
 
-    @Expose({groups:["public", "short"]})
+    @Expose({groups:["public", "short", "admin"]})
     fee:number
 
     @Expose({groups:["coach", "public", "short"]})
     left:number
 
-    @Expose({groups:["coach"]})
+    @Expose({groups:["coach", "admin"]})
     joined:number
 
     @Expose({groups:["enrolled", "coach"]})
     address:string
 
-    @Expose({groups:["enrolled", "public"]})
+    @Expose({groups:["enrolled", "public", "admin"]})
     @ValidateNested()
     @Type(() => CoachResponseDto)
     coach:CoachResponseDto
@@ -56,12 +58,24 @@ export class SessionResponseDto {
     objectives:string[]
 
     @Expose({groups:["public"]})
-    equipment:string[]
+    equipments:string[]
+
+
 
     @Expose({groups:["public", "short"]})
     description:string
 
     @Expose({groups:["public"]})
     participant_min_age:number
+
+    @Expose({
+        groups:["public"]
+    })
+    additional_notes:string
+
+    @Expose({
+        groups:["admin"]
+    })
+    type:SessionType
  
 }

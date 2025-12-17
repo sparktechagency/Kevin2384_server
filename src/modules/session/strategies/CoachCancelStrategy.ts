@@ -15,7 +15,7 @@ export class CoachCancelStrategy implements SessionCancelStrategy {
 
     ){}
 
-    async handleCancelRequest(userId: string, session: Session, participants:SessionParticipant[]): Promise<void> {
+    async handleCancelRequest(userId: string, session: Session, participants:SessionParticipant[], reason:string): Promise<void> {
         
         
         await this.prismaService.session.update({where:{id:session.id}, data:{status:SessionStatus.CANCELLED}})
@@ -29,7 +29,7 @@ export class CoachCancelStrategy implements SessionCancelStrategy {
         for (const participant of participants){
 
             if(participant.payment_method === "ONLINE" && participant.payment_status === "Paid")
-                await this.refundRequestResolver.resolveRefundRequest(participant.id, session)
+                await this.refundRequestResolver.resolveRefundRequest(participant.id, session, reason)
         }
 
      }

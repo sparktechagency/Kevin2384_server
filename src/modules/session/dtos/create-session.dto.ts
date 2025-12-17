@@ -1,5 +1,6 @@
 import { Expose, Type } from "class-transformer"
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator"
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator"
+import { SessionType } from "generated/prisma/enums"
 
 export class CreateSessionDto {
 
@@ -59,10 +60,10 @@ export class CreateSessionDto {
     max_participants:number
 
 
-    @IsNumber()
-    @Type(() => Number)
-    @Expose()
-    duration:number
+    // @IsNumber()
+    // @Type(() => Number)
+    // @Expose()
+    // duration:number
 
 
     @IsNumber()
@@ -86,10 +87,15 @@ export class CreateSessionDto {
     @Expose()
     equipments:Array<string>
 
-    @IsString()
-    @IsNotEmpty()
+   
     @IsOptional()
     @Expose()
     additional_notes:string
+
+    @IsEnum(SessionType)
+    @IsNotEmpty()
+    @IsString()
+    @IsOptional()
+    type:string
 
 }

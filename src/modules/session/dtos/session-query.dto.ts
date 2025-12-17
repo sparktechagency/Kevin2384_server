@@ -5,7 +5,6 @@ import { PaginationDto } from "src/common/dtos/pagination.dto";
 export class SessionQueryDto extends PaginationDto {
 
     @IsOptional()
-    @IsNotEmpty()
     @IsString()
     query:string
 

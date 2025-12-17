@@ -16,58 +16,76 @@ datasource db {
 }
 
 model User {
-  id                    String               @id @default(auto()) @map("_id") @db.ObjectId
-  avatar                String?
-  email                 String               @unique
-  fullName              String
-  phone                 String
-  password              String
-  role                  UserRole
-  email_verified        Boolean              @default(false)
-  is_deleted            Boolean              @default(false)
-  is_blocked            Boolean              @default(false)
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  avatar         String?
+  email          String   @unique
+  fullName       String
+  phone          String
+  password       String
+  role           UserRole
+  email_verified Boolean  @default(false)
+  is_deleted     Boolean  @default(false)
+  is_blocked     Boolean  @default(false)
 
   participated_sessions SessionParticipant[]
   created_sessions      Session[]
   stripe_customer_id    String?
 
-  chat_rooms            ChatMember[]
+  chat_rooms ChatMember[]
 
-  sent_chats          Chat[]  @relation(name: "sent_chats")
-  received_chats      Chat[]  @relation(name: "received_chats")
+  sent_chats     Chat[]         @relation(name: "sent_chats")
+  received_chats Chat[]         @relation(name: "received_chats")
+  subscriptions  Subscription[]
+  notifications  Notification[]
 
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
+model Subscription {
+  id                   String             @id @default(auto()) @map("_id") @db.ObjectId
+  user_id              String             @db.ObjectId
+  stripe_sub_id        String
+  status               SubscriptionStatus @default(ACTIVE)
+  current_period_start DateTime
+  current_period_end   DateTime
+
+  user User @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
 model Session {
-  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
   banner              String
-  coach_id            String   @db.ObjectId
+  coach_id            String        @db.ObjectId
   title               String
   location            Json
   description         String
   additional_notes    String?
   address             String
   participant_min_age Int
-  started_at           DateTime
-  completed_at         DateTime
+  started_at          DateTime
+  completed_at        DateTime
   max_participants    Int
   fee                 Float
-  status               SessionStatus @default(CREATED)
-  objectives String[]
-  equipments String[]
+  status              SessionStatus @default(CREATED)
+  objectives          String[]
+  equipments          String[]
+  type                SessionType?
 
-  coach        User                 @relation(references: [id], fields: [coach_id], onDelete: Cascade)
-  participants SessionParticipant[]
+  coach           User                 @relation(references: [id], fields: [coach_id], onDelete: Cascade)
+  participants    SessionParticipant[]
+  payments        Payment[]
+  refund_requests RefundRequest[]
 
-  refund_requests   RefundRequest[]
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("sessions")
 }
@@ -78,42 +96,71 @@ model SessionParticipant {
   session_id     String                   @db.ObjectId
   payment_status ParticipantPaymentStatus @default(Pending)
   payment_method PaymentMethod
-  player_status  PlayerStatus @default(Pending)
+  player_status  PlayerStatus             @default(Pending)
 
-  session Session @relation(references: [id], fields: [session_id], onDelete: Cascade)
-  player  User    @relation(references: [id], fields: [player_id], onDelete: Cascade)
+  session        Session        @relation(references: [id], fields: [session_id], onDelete: Cascade)
+  player         User           @relation(references: [id], fields: [player_id], onDelete: Cascade)
   refund_request RefundRequest?
+  payments       Payment[]
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("session_participants")
 }
 
+
+model Payment {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  item_id      String?       @db.ObjectId
+  buyer_id     String?       @db.ObjectId
+  status       PaymentStatus @default(Pending)
+  payment_type PaymentType
+  amount      Float
+
+  stripe_session_id  String?
+  stripe_intent_id   String?
+  stripe_charge_id   String?
+  stripe_customer_id String?
+
+  item        Session?            @relation(references: [id], fields: [item_id], onDelete: SetNull)
+  participant SessionParticipant? @relation(references: [id], fields: [buyer_id], onDelete: SetNull)
+  refund      RefundRequest?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
 model RefundRequest {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  participant_id      String  @db.ObjectId @unique
-  session_id        String   @db.ObjectId
-  status            RefundRequestStatus  @default(Pending)
+  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  participant_id String              @unique @db.ObjectId
+  session_id     String              @db.ObjectId
+  payment_id     String              @db.ObjectId @unique
+  status         RefundRequestStatus @default(Pending)
 
-  participant  SessionParticipant  @relation(references: [id], fields: [participant_id])
-  session      Session    @relation(references: [id], fields: [session_id])
+  reason         String
+  
+  participant SessionParticipant @relation(references: [id], fields: [participant_id])
+  session     Session            @relation(references: [id], fields: [session_id])
+  payment     Payment            @relation(references: [id], fields: [payment_id])
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("refund_requests")
 }
 
 model SessionCancelRequest {
-  id        String  @id  @default(auto())  @map("_id")  @db.ObjectId
-  reason    String
-  session_id  String  @db.ObjectId
-  participant_id  String  @db.ObjectId
-  sataus      SessionCancelRequestStatus  @default(Pending)
+  id             String                     @id @default(auto()) @map("_id") @db.ObjectId
+  reason         String
+  session_id     String                     @db.ObjectId
+  participant_id String                     @db.ObjectId
+  sataus         SessionCancelRequestStatus @default(Pending)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("cancel_requests")
 }
@@ -127,18 +174,18 @@ model Otp {
   otp_status OtpStatus @default(CREATED)
   data       Json?
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("otps")
 }
 
 model ChatRoom {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  members     ChatMember[]  
+  members ChatMember[]
 
-  chats     Chat[]  
+  chats Chat[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,13 +194,12 @@ model ChatRoom {
 }
 
 model ChatMember {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  chatRoom_id String   @db.ObjectId
-  user_id   String   @db.ObjectId
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  chatRoom_id String @db.ObjectId
+  user_id     String @db.ObjectId
 
-  chatRoom  ChatRoom @relation(references: [id], fields: [chatRoom_id], onDelete: Cascade)
-  user      User     @relation(references: [id], fields: [user_id], onDelete: Cascade)
-
+  chatRoom ChatRoom @relation(references: [id], fields: [chatRoom_id], onDelete: Cascade)
+  user     User     @relation(references: [id], fields: [user_id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -162,24 +208,111 @@ model ChatMember {
 }
 
 model Chat {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  chatRoom_id String   @db.ObjectId
-  sender_id   String   @db.ObjectId
-  receiver_id String   @db.ObjectId
-  message     String
-  file_url    Bytes?
-  type      MessageType @default(TEXT)
-  is_read     Boolean  @default(false)
-  is_delivered Boolean  @default(false)
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  chatRoom_id  String      @db.ObjectId
+  sender_id    String      @db.ObjectId
+  receiver_id  String      @db.ObjectId
+  message      String
+  file         Bytes?
+  type         MessageType @default(TEXT)
+  is_read      Boolean     @default(false)
+  is_delivered Boolean     @default(false)
 
-  chatRoom    ChatRoom @relation(references: [id], fields: [chatRoom_id], onDelete: Cascade)
-  sender      User     @relation(name: "sent_chats", references: [id], fields: [sender_id], onDelete: Cascade)
-  receiver    User     @relation(name: "received_chats", references: [id], fields: [receiver_id], onDelete: Cascade)
+  chatRoom ChatRoom @relation(references: [id], fields: [chatRoom_id], onDelete: Cascade)
+  sender   User     @relation(name: "sent_chats", references: [id], fields: [sender_id], onDelete: Cascade)
+  receiver User     @relation(name: "received_chats", references: [id], fields: [receiver_id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("chats")
+}
+
+model Notification {
+  id       String            @id @default(auto()) @map("_id") @db.ObjectId
+  user_id  String            @db.ObjectId
+  title    String
+  message  String
+  is_read  Boolean           @default(false)
+  level    NotificationLevel @default(INFO)
+  audience Audience          @default(USER)
+  user     User              @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+
+model DuePayouts {
+  id        String   @id  @default(auto())  @map("_id")  @db.ObjectId
+  session_id  String  @db.ObjectId
+  coach_id    String  @db.ObjectId
+  total_amount Float
+
+  status    PayoutStatus  @default(Pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("due_payouts")
+
+}
+
+model SitePolicy {
+
+  id    String  @id  @default(auto())  @map("_id")  @db.ObjectId
+
+  type   PolicyType
+
+  content   String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("site_policy")
+
+}
+
+
+enum SessionType {
+  Free
+  Paid
+}
+enum PolicyType {
+  PrivacyPolicy
+  Terms
+}
+
+enum PayoutStatus {
+  Pending
+  Hold
+  Paid
+  Cancelled
+}
+
+enum PaymentType {
+  Subscription
+  Enrollment
+  Refund
+}
+
+enum PaymentStatus {
+  Pending
+  Succeeded
+  Cancelled
+}
+
+enum NotificationLevel {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum Audience {
+  USER
+  ADMIN
 }
 
 enum UserRole {
@@ -188,16 +321,26 @@ enum UserRole {
   ADMIN
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
 enum MessageType {
   TEXT
   IMAGE
   VIDEO
   AUDIO
   DOCUMENT
+  FILE
 }
+
 type Coards {
-  lat Float
-  long  Float
+  lat  Float
+  long Float
 }
 
 enum RefundRequestStatus {

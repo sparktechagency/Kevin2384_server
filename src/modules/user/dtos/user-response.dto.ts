@@ -44,6 +44,21 @@ export class UserResponseDto {
     })
     is_blocked:boolean
 
+    @Expose({
+        groups: ['admin']
+    })
+    subscription_end_at:Date    
+
+    @Expose({
+        groups: ['admin']
+    })
+    is_subscription_active:boolean
+
+    @Expose({
+        groups: ['admin']
+    })
+    total_created_sessions:number
+
    
 
 }

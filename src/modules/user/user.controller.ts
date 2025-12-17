@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Query, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { CreateUserDto } from "./dtos/create-user.dto";
 import { UserQueryDto } from "./dtos/user-query.dto";
@@ -21,6 +21,7 @@ import { randomUUID } from "crypto";
 import { Roles } from "src/common/decorators/role.decorator";
 import { UserRole } from "generated/prisma/enums";
 import { TogggleBlockUserDto } from "./dtos/block-user.dto";
+import { WarnUserDto } from "./dtos/warn-user.dto";
 
 @Controller({
 path:"users",
@@ -143,6 +144,30 @@ export class UserController {
     @Roles(UserRole.ADMIN)
     async toggleBlockUser(@Body() toggoleBlockUserDto:TogggleBlockUserDto){
         return this.userService.toggleUserBlockStatus(toggoleBlockUserDto.userId)
+    }
+
+    @Post("admin/warn-user")
+    @ResponseMessage("User warned successfully")
+    @Roles(UserRole.ADMIN)
+    async warnUser(@Req() request:Request, @Body() warnUserDto:WarnUserDto){
+        const tokenPayload = request['payload'] as TokenPayload
+
+
+        return this.userService.warnUser(tokenPayload.id, warnUserDto.userId, warnUserDto.reason)
+    }
+
+    @Delete("admin/:userId")
+    @ResponseMessage("User account deleted successfully")
+    @Roles(UserRole.ADMIN)
+    async deleUserAccount(@Req() request:Request, @Param("userId") userId:string){
+        const tokenPayload = request['payload'] as TokenPayload
+
+        if(tokenPayload.id === userId){
+            throw new BadRequestException("Admin cannot delete their own account using this endpoint")
+        }
+
+      
+        return this.userService.deleteUserById(userId)
     }
 
 }

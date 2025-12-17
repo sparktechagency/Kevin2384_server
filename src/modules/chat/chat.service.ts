@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { SendMessageDto } from "./dtos/send-message.dto";
 import { GetAllMessagesDto } from "./dtos/get-all-messages.dto";
 import { GetUserRoomsDto } from "./dtos/get-user-rooms.dto";
+import { MessageType } from "generated/prisma/enums";
 
 @Injectable()
 export class ChatService {
@@ -23,7 +24,30 @@ export class ChatService {
         const room = await this.createChatRoomIfNotExists(userId, sendMessageDto.receiver_id)
 
         if(sendMessageDto.file){
-            sendMessageDto.file = new Uint8Array(Buffer.from(sendMessageDto.file as any))
+            let fileUnit8Array = new Uint8Array(Buffer.from(sendMessageDto.file as any))
+
+            const createdChat = await this.prismaService.chat.create({
+                data:{
+                    chatRoom_id:room.id,
+                    sender_id:userId,
+                    receiver_id:sendMessageDto.receiver_id,
+                    message:sendMessageDto.message,
+                    file:fileUnit8Array,
+                    type:MessageType.FILE
+                }
+            })
+
+            
+            await this.prismaService.chatRoom.update({
+                where:{id:room.id},
+                data:{
+                    updatedAt:new Date()
+                }
+            })
+
+
+            return createdChat
+
         }
 
 
@@ -34,7 +58,6 @@ export class ChatService {
                 sender_id:userId,
                 receiver_id:sendMessageDto.receiver_id,
                 message:sendMessageDto.message,
-                ...(sendMessageDto.file ? {file_url:sendMessageDto.file} : {})
             }
         })
 

@@ -13,18 +13,30 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { RolesGuard } from './common/guards/roles.guards';
+import { PrivacyPolicyModule } from './modules/privacy_policy/privacy_policy.module';
+import stripeConfig from './config/stripe.config';
+import { ScheduleModule } from '@nestjs/schedule';
+
 
 
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig]}),
+    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig]}),
+    // BullModule.forRoot({
+    //   connection:{
+    //     host:'localhost',
+    //     port:6379
+    //   }
+    // }),
     UserModule,
     AuthModule,
     SessionModule,
     RefundModule,
     PaymentModule,
     ChatModule,
-    NotificationModule
+    NotificationModule,
+    PrivacyPolicyModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [
@@ -34,6 +46,5 @@ import { RolesGuard } from './common/guards/roles.guards';
     
   ],
 
-  
 })
 export class AppModule {}

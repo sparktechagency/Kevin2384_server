@@ -2,5 +2,5 @@ import { RefundRequest, Session } from "generated/prisma/client";
 
 export interface RefundStrategy {
 
-    handleRefundRequest(participantId:string, session:Session):Promise<RefundRequest>
+    handleRefundRequest(participantId:string, session:Session, reason:string):Promise<RefundRequest>
 }
