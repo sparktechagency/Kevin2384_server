@@ -31,5 +31,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{secrets.EC2_HOST}} >> ~/.ssh/known_hosts
 
-      - name : list dirs
-        run: ls 
+      - name : Copy files to EC2
+        run: scp build/  ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:~/app
+      - name : Login to SSH
+        run: |
+          ssh ${{secrets.EC2_USER}}@${{secrets.EC2_USER}} << 'EOF'
+            ls -a
+          EOF
