@@ -490,6 +490,8 @@ export class SessionService {
         this.prismaService.sessionParticipant.count({
 
             where:{session:{coach_id:coachId, id:sessionId}, player_status:PlayerStatus.Attending},
+            skip,
+            take:paginationDto.limit
         })
 
         ])
@@ -527,6 +529,8 @@ export class SessionService {
         this.prismaService.sessionParticipant.count({
 
             where:{session:{coach_id:coachId, id:sessionId}, player_status:PlayerStatus.Cancelled},
+            skip,
+            take:paginationDto.limit
         })
 
         ])
@@ -578,7 +582,10 @@ export class SessionService {
      * @returns 
      */
 
-    async getPlayerEnrolledSessions(userId:string, getPlayerSessionDto:GetPlayerEnrolledSessionDto){
+    async getPlayerEnrolledSessions(userId:string, getPlayerSessionDto:GetPlayerEnrolledSessionDto, pagination:PaginationDto){
+
+        const skip = (pagination.page - 1) * pagination.limit
+
      
         if (getPlayerSessionDto.status === SessionStatus.ONGOING){
 
@@ -587,13 +594,18 @@ export class SessionService {
                 where:{participants:{some:{player_id:userId, player_status:PlayerStatus.Attending}}, 
                     OR:[{status:SessionStatus.CREATED}, {status:SessionStatus.ONGOING}]
                     },
-                    include:{coach:true}
+                    include:{coach:true},
+                    skip,
+                    take:pagination.limit
                 }),
 
                 this.prismaService.session.count({
                 where:{participants:{some:{player_id:userId, player_status:PlayerStatus.Attending}}, 
                     OR:[{status:SessionStatus.CREATED}, {status:SessionStatus.ONGOING}]
-                    }
+                    },
+                    skip,
+                    take:pagination.limit
+                    
                 }),
 
             ])
@@ -608,12 +620,16 @@ export class SessionService {
                 where:{participants:{some:{player_id:userId, player_status:PlayerStatus.Attending}}, 
                     OR:[{status:SessionStatus.CREATED}, {status:SessionStatus.ONGOING}]
                     },
-                    include:{coach:true}
+                    include:{coach:true},
+                    skip,
+                    take:pagination.limit
                 }),
 
                 this.prismaService.session.count({
                 where:{participants:{some:{player_id:userId, player_status:PlayerStatus.Attending}}, 
-                    status:getPlayerSessionDto.status}
+                    status:getPlayerSessionDto.status},
+                    skip,
+                    take:pagination.limit
                 }),
 
             ])
@@ -650,7 +666,7 @@ export class SessionService {
                 skip,
                 take:query.limit
             }),
-            this.prismaService.session.count({where:{status:SessionStatus.CREATED}})
+            this.prismaService.session.count({where:{status:SessionStatus.CREATED}, skip, take:query.limit})
         ])
 
         const mappedSessions = sessions.map( session =>{

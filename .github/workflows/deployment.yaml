@@ -35,10 +35,29 @@ jobs:
 
       - name : Copy files to EC2
         run: scp -r dist  ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:~/app
+      
         
-      - name : Login to SSH
+      - name : Login to EC2
+        env: 
+
+          env_vars: |
+            DATABASE_URL = ${{secrets.DATABASE_URL}}
+            PORT = ${{secrets.PORT}}
+            BASE_PATH = ${{secrets.BASE_PATH}}
+            PORT= ${{secrets.PORT}}
+
+            MAILER_HOST= ${{secrets.MAILER_HOST}}
+            MAILER_PORT= ${{secrets.MAILER_PORT}}
+            MAILER_MAIL= ${{secrets.MAILER_MAIL}}
+            MAILER_PASSWORD= ${{secrets.MAILER_PASSWORD}}
+            MAILER_SERVICE= ${{secrets.MAILER_SERVICE}}
+
+            STRIPE_KEY= ${{secrets.STRIPE_KEY}}
+            STRIPE_WEBHOOK= ${{secrets.STRIPE_WEBHOOK}}
         run: |
           ssh ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}} << 'EOF'
           cd app
+          touch .env
+          echo "${env_vars}" > .env
           pnpm i
           EOF

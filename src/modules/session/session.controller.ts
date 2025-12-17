@@ -258,10 +258,10 @@ export class SessionController {
     @Get("enrolled")
     @ResponseMessage("Player enrolled sessions fetched successfully.")
     @Roles(UserRole.PLAYER)
-    async getPlayerEnrolledSessions(@Req() request:Request, @Body() playerEnrolledSessionDto:GetPlayerEnrolledSessionDto){
+    async getPlayerEnrolledSessions(@Req() request:Request, @Body() playerEnrolledSessionDto:GetPlayerEnrolledSessionDto, @Query() pagination:PaginationDto){
         const tokenPayload = request['payload'] as TokenPayload
 
-        const ongoingSessions = await this.sessionService.getPlayerEnrolledSessions(tokenPayload.id, playerEnrolledSessionDto)
+        const ongoingSessions = await this.sessionService.getPlayerEnrolledSessions(tokenPayload.id, playerEnrolledSessionDto, pagination)
 
         return plainToInstance(PlayerEnrolledSessionDto, ongoingSessions, {
             excludeExtraneousValues: true,
