@@ -5,6 +5,8 @@ on:
       - Build and Push Artifacts
     types:
       - completed
+  workflow_dispatch:
+    
 
 permissions:
   actions: read      
