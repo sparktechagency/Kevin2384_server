@@ -42,15 +42,4 @@ jobs:
               with:
                 name: build-artifacts
                 path: dist/
-
-    release-artifacts:
-        name: Release Artifacts
-        runs-on: ubuntu-latest
-        needs: build-and-upload-artifacts
-
-        steps:
-            - name: Download Artifacts
-              uses: actions/download-artifact@v4
-              with:
-                name: build-artifacts
    
