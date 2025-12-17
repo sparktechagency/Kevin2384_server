@@ -21,7 +21,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          path: dist/
+          path: build/
           run-id: ${{github.event.workflow_run.id}}
           github-token: ${{github.token}}
 
@@ -33,7 +33,7 @@ jobs:
           ssh-keyscan -H ${{secrets.EC2_HOST}} >> ~/.ssh/known_hosts
 
       - name : Copy files to EC2
-        run: scp -r dist  ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:~/app
+        run: scp -r build/*  ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:~/app
       
         
       - name : Login to EC2
