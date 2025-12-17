@@ -34,9 +34,11 @@ jobs:
           ssh-keyscan -H ${{secrets.EC2_HOST}} >> ~/.ssh/known_hosts
 
       - name : Copy files to EC2
-        run: scp -r dist/*  ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:~/app
+        run: scp -r dist  ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:~/app
+        
       - name : Login to SSH
         run: |
           ssh ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}} << 'EOF'
-            ls -a
+          cd app
+          pnpm i
           EOF
