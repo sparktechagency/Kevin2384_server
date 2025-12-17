@@ -65,7 +65,7 @@ export class PaymentController{
         const tokenPayload = request['payload'] as TokenPayload
 
         const result = await this.paymentService.getCoachRefunds(tokenPayload.id, paginationDto)
-        console.log(result)
+
         return plainToInstance(RefundResponseDto, result, {
             excludeExtraneousValues: true
         })
