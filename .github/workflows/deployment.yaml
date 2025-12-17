@@ -8,16 +8,22 @@ on:
 
 jobs:
   deploy:
+    environment: production
     if: ${{github.event.workflow_run.conclusion == 'success'}}   
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: build-output
+          name: build-artifacts
           path: dist/
 
-      - name: print something
-        run: echo "Deploying to AWS..."
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{secrets.EC2_SSH_KEY}}" >> ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{secrets.EC2_HOST}} >> ~/.ssh/known_hosts
 
-        
+      - name : list dirs
+        run: ls 
