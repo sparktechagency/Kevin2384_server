@@ -15,6 +15,7 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v5
+
             - name: Install pnpm
               uses: pnpm/action-setup@v4
               with:
@@ -28,18 +29,23 @@ jobs:
             
             - name: Install dependencies
               run: pnpm i
+
             - name: Generate prisma client
               run: npx prisma generate
               env:
                 DATABASE_URL: ${{secrets.DATABASE_URL}}
-              
 
             - name: Build project
               run: pnpm run build
+
+            - name: Copy files
+              run: |
+                cp  package.json  dist/
+                cp  pnpm-lock.yaml  dist/
 
             - name: Archive Artifacts
               uses: actions/upload-artifact@v4
               with:
                 name: build-artifact
-                path: ./
+                path: ./dist
    
