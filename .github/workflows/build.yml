@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - main  # Trigger on changes to main
-env:
-  DATABASE_URL: "mongodb+srv://sahin-dev:dev1122@node1.mdor7ab.mongodb.net/coachconnect?appName=node1"
 
 
 jobs:
-
     build-and-upload-artifacts:
         name: Build and Upload Artifacts
+        environment: production
         runs-on: ubuntu-latest
 
         steps:
@@ -32,6 +30,8 @@ jobs:
               run: pnpm i
             - name: Generate prisma client
               run: npx prisma db push
+              env:
+                DATABASE_URL: ${{secrets.DATABASE_URL}}
               
 
             - name: Build project
@@ -41,5 +41,5 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                 name: build-artifact
-                path: dist/
+                path: ./
    
