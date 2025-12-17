@@ -29,7 +29,7 @@ jobs:
             - name: Install dependencies
               run: pnpm i
             - name: Generate prisma client
-              run: npx prisma db push
+              run: npx prisma generate
               env:
                 DATABASE_URL: ${{secrets.DATABASE_URL}}
               
