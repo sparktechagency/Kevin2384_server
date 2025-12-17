@@ -2,7 +2,7 @@ name: "Deploy to AWS"
 on:
   workflow_run:
     workflows:
-      - Build and Push Artifact
+      - Build and Push Artifacts
     types:
       - completed
 
