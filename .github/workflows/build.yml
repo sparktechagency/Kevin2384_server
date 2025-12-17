@@ -38,8 +38,11 @@ jobs:
             - name: Build project
               run: pnpm run build
 
+
             - name: Copy files
               run: |
+                cp generated/prisma/libquery_engine-rhel-openssl-3.0.x.so.node dist/generated/prisma/
+                
                 mkdir build
                 cp -r dist        build/
                 cp  package.json  build/
