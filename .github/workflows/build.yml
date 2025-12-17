@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main  # Trigger on changes to main
+env:
+  DATABASE_URL: "mongodb+srv://sahin-dev:dev1122@node1.mdor7ab.mongodb.net/coachconnect?appName=node1"
+
 
 jobs:
 
@@ -29,6 +32,7 @@ jobs:
               run: pnpm i
             - name: Generate prisma client
               run: npx prisma db push
+              
 
             - name: Build project
               run: pnpm run build
