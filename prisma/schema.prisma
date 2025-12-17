@@ -8,6 +8,8 @@ generator client {
   provider     = "prisma-client"
   output       = "../generated/prisma"
   moduleFormat = "cjs"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  
 }
 
 datasource db {
