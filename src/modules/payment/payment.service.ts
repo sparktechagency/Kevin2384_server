@@ -94,7 +94,9 @@ export class PaymentService {
         return 0
       }, 0)
 
-      return {total, withdrawn:totalWithdrawn, pending:(totalAmountReceived - totalRefund)}
+      const pending = (totalAmountReceived - totalRefund)
+
+      return {total: totalWithdrawn + pending, withdrawn:totalWithdrawn, pending}
     }
 
     async getCoachPayments(coachId:string, paginationDto:PaginationDto){
