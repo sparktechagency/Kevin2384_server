@@ -42,7 +42,6 @@ jobs:
 
           env_vars: |
             DATABASE_URL = ${{secrets.DATABASE_URL}}
-            PORT = ${{secrets.PORT}}
             BASE_PATH = ${{secrets.BASE_PATH}}
             PORT= ${{secrets.PORT}}
 
@@ -55,9 +54,9 @@ jobs:
             STRIPE_KEY= ${{secrets.STRIPE_KEY}}
             STRIPE_WEBHOOK= ${{secrets.STRIPE_WEBHOOK}}
         run: |
-          ssh ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}} << 'EOF'
+          ssh ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}} << EOF
           cd app
           touch .env
           echo "${env_vars}" > .env
-          pnpm i
+          pnpm install
           EOF
