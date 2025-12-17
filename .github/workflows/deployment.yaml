@@ -58,7 +58,5 @@ jobs:
           touch .env
           echo "${env_vars}" > .env
           pnpm install
+          pm2 restart dist/src/main.js
           EOF
-
-      - name : Restart the app
-        run: pm2 restart dist/src/main.js
