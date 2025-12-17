@@ -59,3 +59,6 @@ jobs:
           echo "${env_vars}" > .env
           pnpm install
           EOF
+
+      - name : Restart the app
+        run: pm2 restart dist/src/main.js
