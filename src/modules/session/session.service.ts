@@ -171,7 +171,7 @@ export class SessionService {
                 orderBy:{started_at:"asc"}, 
                 skip, 
                 take:pagination.limit,
-                include:{_count:{select:{participants:true}}
+                include:{_count:{select:{participants:{where:{player_status:PlayerStatus.Attending}}}}
             }}),
             this.prismaService.session.count({
                 where:{coach_id:coachId, started_at:upcomingWindow, status:SessionStatus.CREATED}})
@@ -179,7 +179,9 @@ export class SessionService {
 
         const sessionWithJoinDetails = await Promise.all (sessions.map(async session => {
         
-            const joindParticipant = await this.prismaService.sessionParticipant.count({where:{session_id:session.id}})
+            const joindParticipant = await this.prismaService.sessionParticipant.count({
+                where:{session_id:session.id, player_status:PlayerStatus.Attending
+            }})
 
             return {...session , left:session.max_participants - joindParticipant}
         }))
@@ -217,7 +219,7 @@ export class SessionService {
 
          const [sessions, total] = await this.prismaService.$transaction([
             this.prismaService.session.findMany({
-                where:{coach_id:coachId, participants:{none:{}}, status:SessionStatus.CREATED},
+                where:{coach_id:coachId, participants:{none:{player_status:PlayerStatus.Attending}}, status:SessionStatus.CREATED},
                 skip,
                 take:pagination.limit
             }), 
@@ -242,9 +244,11 @@ export class SessionService {
     async getActiveSessions(coachId:string, pagination:PaginationDto){
 
         const skip = (pagination.page - 1) * pagination.limit
+
         const [sessions, total] = await this.prismaService.$transaction([
+
             this.prismaService.session.findMany({
-                where:{coach_id:coachId, participants:{some:{}}, status:SessionStatus.CREATED},
+                where:{coach_id:coachId, participants:{some:{player_status:PlayerStatus.Attending}}, status:SessionStatus.CREATED},
                 skip,
                 take:pagination.limit,
                 include:{_count:{select:{participants:true}}}
@@ -405,6 +409,7 @@ export class SessionService {
      * @param enrollSessionDto 
      * @returns 
      */
+
     async enrollSession(playerId:string, enrollSessionDto:EnrollSessionDto){
 
         const session = await this.prismaService.session.findUnique({where:{id:enrollSessionDto.sessionId}})
@@ -498,6 +503,7 @@ export class SessionService {
         }
 
         const [enrolledPlayer, total] = await this.prismaService.$transaction([
+            
             this.prismaService.sessionParticipant.findMany({
 
             where:{session:{coach_id:coachId, id:sessionId}, player_status:PlayerStatus.Attending},
