@@ -27,7 +27,7 @@ export class RefundAutoAcceptedStrategy implements RefundStrategy{
                 participant_id:participantId,
                 session_id:session.id,
                 status:RefundRequestStatus.Accepted,
-                refunded_amount:payment.total_amount,
+                refunded_amount:payment.session_fee,
                 payment_id:payment.id,
                 refund_request_type:RefundRequestType.AutoAccepted,
                 reason
