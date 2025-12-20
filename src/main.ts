@@ -29,8 +29,6 @@ async function bootstrap() {
 // );
 
   const staticFilePath = join(process.cwd(), 'uploads')
-  console.log(__dirname)
-  console.log(process.cwd())
 
   app.useStaticAssets(staticFilePath, {prefix:'/uploads'})
 
