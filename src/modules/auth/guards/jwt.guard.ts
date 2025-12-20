@@ -4,12 +4,14 @@ import { Request } from "express";
 import { TokenPayload } from "../types/TokenPayload.type";
 import { Reflector } from "@nestjs/core";
 import { PUBLIC_KEY } from "src/common/decorators/public.decorator";
+import { UserService } from "src/modules/user/user.service";
 
 @Injectable()
 export class JwtGuard implements CanActivate {
 
     constructor(private readonly jwtService:JwtService,
         private readonly reflector: Reflector,
+        private readonly userService:UserService
     ){}
 
     async canActivate(context: ExecutionContext):Promise<boolean> {
@@ -25,7 +27,14 @@ export class JwtGuard implements CanActivate {
             const token = this.extractToken(request)
     
             const payload = await this.jwtService.verifyAsync<TokenPayload>(token, {secret:"MySecret"})
+
+            const user = await this.getUserData(payload.id)
+            if(!user || user.is_blocked || user.is_deleted){
+                throw new BadRequestException("User data does not exist")
+            }
+
             request['payload'] = payload
+
 
             return true
             
@@ -50,9 +59,10 @@ export class JwtGuard implements CanActivate {
         }
     
             return token
-
-            
-     
+    }
+    private async getUserData(userId:string){
+        const user = await this.userService.findUserById(userId)
+        return user
     }
     
 }

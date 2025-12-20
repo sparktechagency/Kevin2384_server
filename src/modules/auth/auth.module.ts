@@ -12,7 +12,8 @@ import { OtpGenerator } from "src/common/providres/OtpGenerator.provider";
 @Module({
     imports:[JwtModule.register({secret:"MySecret"})],
     controllers:[AuthController],
-    providers:[AuthService, UserService, EncoderProvider, PrismaService, SMTPProvider, OtpGenerator]
+    providers:[AuthService, UserService, EncoderProvider, PrismaService, SMTPProvider, OtpGenerator],
+
 })
 export class AuthModule {
 
