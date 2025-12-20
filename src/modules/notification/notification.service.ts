@@ -29,7 +29,7 @@ export class NotificationService {
 
     async getNotifications(userId:string, pagination:PaginationDto){
         const skip = (pagination.page - 1) * pagination.limit
-
+ 
         const [notifications, total] = await this.prismaService.$transaction([
             this.prismaService.notification.findMany({
                 where:{user_id:userId, audience:Audience.USER},
@@ -37,8 +37,13 @@ export class NotificationService {
                 skip,
                 take:pagination.limit
             }),
-            this.prismaService.notification.count({where:{user_id:userId, audience:Audience.USER}})
+            this.prismaService.notification.count({where:{user_id:userId, audience:Audience.USER}, skip, take:pagination.limit})
         ])
+
+        console.log(notifications)
+
+        // update notification read status
+        await this.prismaService.notification.updateMany({where:{user_id:userId, is_read:false}, data:{is_read:true}})
 
         return {notifications, total}
     }
@@ -69,6 +74,15 @@ export class NotificationService {
 
         await this.prismaService.notification.update({where:{id:notification.id}, data:{is_read:true}})
 
+    }
+
+    async getNewNotificationCount(userId:string){
+        const newNotifications = await this.prismaService.notification.count({where:{
+            is_read:false,
+            user_id:userId,
+        }})
+
+        return newNotifications
     }
 
 }

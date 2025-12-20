@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { RefundStrategy } from "./RefundStrategy.interface";
 import { PrismaService } from "src/modules/prisma/prisma.service";
-import { ParticipantPaymentStatus, PaymentStatus, PaymentType, PlayerStatus, RefundRequestStatus } from "generated/prisma/enums";
+import { ParticipantPaymentStatus, PaymentStatus, PaymentType, PlayerStatus, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
 import { Session } from "generated/prisma/client";
 
 @Injectable()
@@ -27,14 +27,18 @@ export class RefundAutoAcceptedStrategy implements RefundStrategy{
                 participant_id:participantId,
                 session_id:session.id,
                 status:RefundRequestStatus.Accepted,
+                refunded_amount:payment.total_amount,
                 payment_id:payment.id,
+                refund_request_type:RefundRequestType.AutoAccepted,
                 reason
             }})
 
             await prisma.payment.create({data:{
                 payment_type:PaymentType.Refund,
                 buyer_id:participantId,
-                amount:payment.amount,
+                total_amount:payment.total_amount,
+                platform_fee:payment.platform_fee,
+                session_fee:payment.session_fee,
                 item_id:session.id
             }})
 

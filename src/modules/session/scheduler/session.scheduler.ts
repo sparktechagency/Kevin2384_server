@@ -20,7 +20,6 @@ export class SessionScheduler{
                 if(session.completed_at <= new Date(Date.now())){
                     await prisma.session.update({where:{id:session.id}, data:{status:SessionStatus.COMPLETED}})
                     console.log(`session completed: `, session.id)
-                    await this.createPayout(session)
                 }
             })
        })
@@ -39,10 +38,14 @@ export class SessionScheduler{
     async createPayout(session:Session){
 
         const totalPayments = await this.prismaService.payment.findMany({where:{ item_id:session.id,  status:PaymentStatus.Succeeded,refund:null}})
-        const totalAmount = totalPayments.reduce( (prev, payment) => prev + payment.amount, 0)
+        const totalAmount = totalPayments.reduce( (prev, payment) => prev + payment.total_amount, 0)
         const refundRequests = await this.prismaService.refundRequest.findMany({where:{session_id:session.id}, include:{payment:true}})
         // const totalHoldAmount = refundRequests.reduce((pre, refund) => pre+refund.payment.amount, 0)
         // const actualAmount = payout.total_amount - totalHoldAmount
+        if(refundRequests.length > 0){
+
+        }
+
         
         await this.prismaService.duePayouts.create({data:{
             coach_id:session.coach_id,

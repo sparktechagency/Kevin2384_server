@@ -12,6 +12,9 @@ export class RefundResponse{
     player_name:string
 
     @Expose()
+    avatar:string
+
+    @Expose()
     status:string
 
     @Expose()

@@ -28,6 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     //     port:6379
     //   }
     // }),
+    
     UserModule,
     AuthModule,
     SessionModule,
@@ -38,6 +39,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     PrivacyPolicyModule,
     ScheduleModule.forRoot()
   ],
+  
   controllers: [AppController],
   providers: [
     JwtService,
@@ -47,4 +49,5 @@ import { ScheduleModule } from '@nestjs/schedule';
   ],
 
 })
+
 export class AppModule {}

@@ -84,6 +84,7 @@ export class SessionBuilder{
         const startDate = new Date(datetime)
         const currentDate = new Date(Date.now())
         console.log(startDate)
+        console.log(currentDate)
         if(startDate <= currentDate){
             throw new Error("Error occured during setting start time. Start date must be in future.")
         }
@@ -99,7 +100,7 @@ export class SessionBuilder{
     setStartAt(date:string, time:string){
 
         const startDate = this.getUtcDate(date,time)
-
+        console.log("Utc date", startDate)
         const completedDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
      
         this.setStartDate(new Date(startDate))
@@ -115,14 +116,15 @@ export class SessionBuilder{
 
         const [hours, minutes] = this.getTimeParts(time)
         const [m,d,y] = this.getDateParts(date)
-        
-        return new Date(Date.UTC(y,m-1,d,hours,minutes))
+    
+        return  new Date(y,m-1,d,hours,minutes)
 
     }
+
     private getTimeParts(time:string){
         const [splittedTime, ampm] = time.split(" ")
         let [hour, minutes] = splittedTime.split(":").map(part => Number(part))
-        if(ampm == "PM")
+        if((ampm == "PM") && (hour < 12))
            hour = Math.min( hour += 12, 23)
         return [hour, minutes]
     }
