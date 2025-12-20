@@ -13,6 +13,7 @@ export class PaymentService {
     async createPayment(createPaymentDto:CreatePaymentDto){
 
         const session = await this.prismaService.session.findUnique({where:{id:createPaymentDto.item_id}})
+        const platform_fee = 0.0
 
         if(!session){
             throw new NotFoundException("session not found")
@@ -21,21 +22,38 @@ export class PaymentService {
             item_id:createPaymentDto.item_id,
             buyer_id:createPaymentDto.participant_id,
             payment_type:createPaymentDto.payment_type,
-            amount:createPaymentDto.amount
+            total_amount:createPaymentDto.amount + platform_fee,
+            platform_fee:platform_fee,
+            session_fee:session.fee
         }})
 
-        const checkoutSession = await this.stripeProvider.createCheckoutSession(createdPayment.amount,{title:session.title, description:session.description}, createdPayment.id, createPaymentDto.participant_id, createPaymentDto.item_id)
+        const checkoutSession = await this.stripeProvider.createCheckoutSession(createdPayment.total_amount,{title:session.title, description:session.description}, createdPayment.id, createPaymentDto.participant_id, createPaymentDto.item_id)
 
         return checkoutSession
     }
 
     async configureStripeAccount(userId:string){
+        const user = await this.prismaService.user.findUnique({where:{id:userId}})
 
-        const {account, onboardingLink} =  await this.stripeProvider.createStripeAccount()
+        if(!user){
+            throw new NotFoundException("User not found")
+        }
 
-        await this.prismaService.user.update({where:{id:userId}, data:{stripe_customer_id:account.id}})
+        if(!user.stripe_customer_id){
+             const account =  await this.stripeProvider.createStripeAccount()
+            user.stripe_customer_id = account.id
+            await this.prismaService.user.update({where:{id:userId}, data:{stripe_customer_id:account.id}})
+        }
 
-        return onboardingLink
+        const account = await this.stripeProvider.retriveAccount(user.stripe_customer_id)
+
+        
+        if(account.charges_enabled && account.payouts_enabled){
+            return {stripe_configuration:true}
+        }
+
+        return await this.stripeProvider.generateAccountLink(account.id)
+        
     }
 
    async getEarningGrowth(year:number): Promise<Array<{ month: number; total: number }>>{
@@ -85,8 +103,8 @@ export class PaymentService {
             where:{item:{coach_id:coachId}, payment_type:PaymentType.Refund, status:PaymentStatus.Succeeded}
         })
 
-        const totalAmountReceived = payments.reduce((pre, curr) => pre + curr.amount, 0)
-        const totalRefund = refunds.reduce((pre, curr) => pre + curr.amount, 0)
+        const totalAmountReceived = payments.reduce((pre, curr) => pre + curr.total_amount, 0)
+        const totalRefund = refunds.reduce((pre, curr) => pre + curr.total_amount, 0)
 
       const totalPending = payouts.reduce((pre, curr) => {
         if((curr.status === PayoutStatus.Hold) || (curr.status === PayoutStatus.Pending))
@@ -114,7 +132,7 @@ export class PaymentService {
 
             const mappedPayments = payments.map(payment => {
 
-                return {...payment, player_name:payment.participant?.player.fullName, session_title:payment.item?.title, amount:payment.amount}
+                return {...payment, player_name:payment.participant?.player.fullName, session_title:payment.item?.title, amount:payment.total_amount}
             })
             const total = await this.prismaService.payment.count({
                 where:{item:{coach_id:coachId}, status:PaymentStatus.Succeeded}
@@ -147,7 +165,7 @@ export class PaymentService {
 
             const mappedRefunds = payments.map(payment => {
 
-                return {...payment, player_name:payment.participant?.player.fullName, session_title:payment.item?.title, amount:payment.amount}
+                return {...payment, player_name:payment.participant?.player.fullName, session_title:payment.item?.title, amount:payment.total_amount}
             })
             return {refunds:mappedRefunds, total}
         })

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { RefundStrategy } from "./RefundStrategy.interface";
 import { PrismaService } from "src/modules/prisma/prisma.service";
-import { PaymentStatus, RefundRequestStatus } from "generated/prisma/enums";
+import { PaymentStatus, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
 import { Session } from "generated/prisma/client";
 
 @Injectable()
@@ -23,6 +23,8 @@ export class AdminApprovalStrategy implements RefundStrategy{
                     session_id:session.id,
                     status:RefundRequestStatus.Pending,
                     payment_id:payment.id,
+                    refund_request_type:RefundRequestType.AdminApproval,
+                    refunded_amount:payment.session_fee,
                     reason
                 }})
 

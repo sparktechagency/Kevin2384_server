@@ -39,6 +39,7 @@ model User {
   received_chats Chat[]         @relation(name: "received_chats")
   subscriptions  Subscription[]
   notifications  Notification[]
+  payouts       DuePayouts[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -85,6 +86,7 @@ model Session {
   participants    SessionParticipant[]
   payments        Payment[]
   refund_requests RefundRequest[]
+  payout          DuePayouts?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,7 +120,9 @@ model Payment {
   buyer_id     String?       @db.ObjectId
   status       PaymentStatus @default(Pending)
   payment_type PaymentType
-  amount      Float
+  platform_fee    Float
+  session_fee     Float
+  total_amount      Float
 
   stripe_session_id  String?
   stripe_intent_id   String?
@@ -141,6 +145,10 @@ model RefundRequest {
   session_id     String              @db.ObjectId
   payment_id     String              @db.ObjectId @unique
   status         RefundRequestStatus @default(Pending)
+  refund_request_type     RefundRequestType
+  accepted_by    String?              @db.ObjectId
+  rejection_note String?
+  refunded_amount  Float
 
   reason         String
   
@@ -249,11 +257,15 @@ model Notification {
 
 model DuePayouts {
   id        String   @id  @default(auto())  @map("_id")  @db.ObjectId
-  session_id  String  @db.ObjectId
+  session_id  String  @db.ObjectId  @unique
   coach_id    String  @db.ObjectId
   total_amount Float
+  refund_amount Float  @default(0.0)
+
 
   status    PayoutStatus  @default(Pending)
+  session   Session  @relation(references: [id], fields: [session_id])
+  coach     User   @relation(references: [id], fields: [coach_id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -275,6 +287,11 @@ model SitePolicy {
 
   @@map("site_policy")
 
+}
+
+enum RefundRequestType {
+  AdminApproval
+  AutoAccepted
 }
 
 

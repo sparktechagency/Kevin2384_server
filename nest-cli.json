@@ -4,14 +4,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-     "assets": [
-          {
-            "include": "../uploads",
-            "outDir": "dist/uploads",
-            "watchAssets": true
-          }
-        ],
-        "watchAssets": true
+      "watchAssets": true
   }
   
 }
