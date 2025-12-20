@@ -5,7 +5,6 @@ import { ResponseMessage } from "src/common/decorators/apiResponseMessage.decora
 import { PaginationDto } from "src/common/dtos/pagination.dto";
 import { TokenPayload } from "../auth/types/TokenPayload.type";
 import { plainToInstance } from "class-transformer";
-import { NotificationResponseDto } from "./dtos/notifications-response.dto";
 import { Roles } from "src/common/decorators/role.decorator";
 import { UserRole } from "generated/prisma/enums";
 import { UserNotificationsResponseDto } from "./dtos/user-notifications-reponse.dto";
@@ -34,6 +33,7 @@ export class NotificationController {
         const tokenPayload = request['payload'] as TokenPayload
 
         const notifications = await this.notificationService.getNotifications(tokenPayload.id, pagination)
+     
 
         return plainToInstance(UserNotificationsResponseDto, notifications, {
             excludeExtraneousValues: true
@@ -46,10 +46,23 @@ export class NotificationController {
     async getAdminNotifications( @Query()pagination:PaginationDto){
 
         const notifications = await this.notificationService.getAdminNotifications(pagination)
+        
 
         return plainToInstance(UserNotificationsResponseDto, notifications, {
             excludeExtraneousValues: true
         })
+    }
+
+    @Get("count")
+    @ResponseMessage("new notification count fetched successfully")
+    async getNewNotificationCount(@Req() request:Request){
+        const tokenPayload = request['payload'] as TokenPayload
+
+        const count = await this.notificationService.getNewNotificationCount(tokenPayload.id)
+
+        return {
+            count
+        }
     }
 
     @Patch("/:notificationId")
@@ -60,5 +73,7 @@ export class NotificationController {
 
         await this.notificationService.updateNotificatinStatus(tokenPayload.id,notificationId)
     }
+
+   
 
 }

@@ -64,17 +64,29 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
             },
         })
 
-        const onboardingLink = await this.stripeCLient.accountLinks.create({
-            account:account.id,
+       
+    
+        return  account
+    }
+
+    async generateAccountLink (accountId:string){
+
+         const onboardingLink = await this.stripeCLient.accountLinks.create({
+            account:accountId,
             type:"account_onboarding",
             return_url:"http://google.com",
             refresh_url:"http://google.com",
             collection_options: {
                 fields: 'currently_due',
             },
+            
         })
-    
-        return {onboardingLink, account}
+
+        return onboardingLink
+    }
+
+    async checkAccountStatus(accountId:string){
+
     }
 
     async retriveAccount(accountId:string){

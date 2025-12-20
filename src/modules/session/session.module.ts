@@ -11,6 +11,8 @@ import { UserModule } from '../user/user.module';
 import { SessionScheduler } from './scheduler/session.scheduler';
 import { PaymentService } from '../payment/payment.service';
 import { StripeProvider } from '../payment/providers/stripe.provider';
+import { NotificationService } from '../notification/notification.service';
+import { SessionNotifier } from './providers/SessionNotifier.provider';
 
 @Module({
     imports:[RefundModule, UserModule],
@@ -22,6 +24,8 @@ import { StripeProvider } from '../payment/providers/stripe.provider';
         SessionScheduler,
         PaymentService,
         StripeProvider,
+        NotificationService,
+        SessionNotifier,
         {
             provide: CoachCancelStrategy.INJECTION_KEY,
             useClass: CoachCancelStrategy

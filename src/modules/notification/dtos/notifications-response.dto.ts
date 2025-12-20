@@ -1,4 +1,4 @@
-import { Expose } from "class-transformer"
+import { Expose, Type } from "class-transformer"
 import { PaginationResponseDto } from "src/common/dtos/pagination-response.dto"
 
 export class NotificationResponseDto {
@@ -11,4 +11,8 @@ export class NotificationResponseDto {
 
     @Expose()
     is_read:boolean
+
+    @Expose()
+    @Type(() => Date)
+    createdAt:Date
 }

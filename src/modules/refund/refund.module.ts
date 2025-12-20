@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AdminApprovalStrategy } from './strategies/AdminApprovalRefundRequest.strategy';
 import { RefundController } from './refund.controller';
 import { RefundService } from './refund.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Module({
     providers:[
@@ -18,7 +19,8 @@ import { RefundService } from './refund.service';
             useClass: AdminApprovalStrategy
         },
         RefundRequestResolver,
-        RefundService
+        RefundService,
+        NotificationService
     ],
     controllers:[RefundController],
     exports:[RefundRequestResolver]
