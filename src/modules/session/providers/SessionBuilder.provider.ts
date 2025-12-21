@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { LocationCords, Session } from "../models/Session.model";
 import { SessionType } from "generated/prisma/enums";
+import type { S3FIle } from "src/common/types/S3File.type";
 
 
 export class SessionBuilder{
@@ -49,10 +50,10 @@ export class SessionBuilder{
         return this
     }
 
-    setBanner(bannerUrl?:Express.Multer.File){
+    setBanner(bannerUrl?:S3FIle){
 
         if(bannerUrl){
-            this.session.banner = bannerUrl.path
+            this.session.banner = bannerUrl.location
         }
 
         return this

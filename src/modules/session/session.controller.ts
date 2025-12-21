@@ -25,22 +25,24 @@ import { SessionDetailsParamsDto } from "./dtos/session-details-params.dto";
 import { AvailableSessionResponseDto } from "./dtos/available-sesion-response.dto";
 import { ActiveSessionResponseDto } from "./dtos/active-session-response.dto";
 import { AdminSessionResponseDto } from "./dtos/admin-session-response.dto";
-import { S3Storage } from "src/common/storage/s3-storage";
+import {type S3FIle } from "src/common/types/S3File.type";
+
 
 @Controller({path:"sessions"})
 export class SessionController {
 
+
     constructor(private readonly sessionService:SessionService){}
 
-    @UseInterceptors(FileInterceptor("banner"))
+    @UseInterceptors(FileInterceptor("banner", {
+        limits:{fileSize:100000}
+    }))
 
     @Post()
     @ResponseMessage("session created succesfully")
     @Roles(UserRole.COACH)
-    async createSession(@Body() createSessionDto:CreateSessionDto, @Req() request:Request, @UploadedFile() banner:Express.Multer.File){
+    async createSession(@Body() createSessionDto:CreateSessionDto, @Req() request:Request, @UploadedFile() banner:S3FIle){
         const payload = request['payload'] as TokenPayload
-
-        console.log(banner)
 
         console.log("Create session: ",createSessionDto)
         
@@ -278,16 +280,20 @@ export class SessionController {
 
         }else if (session.participants.find(participant => participant.player_id === tokenPayload.id)){
 
+            Object.assign(session, {enrolled:true})
+
             return plainToInstance(SessionResponseDto, session, {
                 excludeExtraneousValues:true,
-                groups:["public", "enrolled"]
+                groups:["public", "enrolled", "extra"]
             })
 
         }
 
+        Object.assign(session, {enrolled:true})
         return plainToInstance(SessionResponseDto, session, {
             excludeExtraneousValues:true,
-            groups:["public"]
+            
+            groups:["public", "extra"]
         })
     }
 

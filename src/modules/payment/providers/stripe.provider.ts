@@ -1,7 +1,8 @@
 import { BadRequestException, Inject, Injectable, RawBodyRequest } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
-import { ParticipantPaymentStatus, PaymentStatus, PlayerStatus } from "generated/prisma/enums";
+import { Audience, NotificationLevel, ParticipantPaymentStatus, PaymentStatus, PlayerStatus } from "generated/prisma/enums";
 import stripeConfig, { StripeConfig } from "src/config/stripe.config";
+import { NotificationService } from "src/modules/notification/notification.service";
 import { PrismaService } from "src/modules/prisma/prisma.service";
 import Stripe from "stripe";
 
@@ -19,7 +20,8 @@ export class StripeProvider {
 
     constructor(
         @Inject(stripeConfig.KEY) private readonly stripeCOnfiguration:ConfigType<typeof StripeConfig>,
-        private readonly prismaService:PrismaService
+        private readonly prismaService:PrismaService,
+        private readonly notificationService:NotificationService
 ){
         if(!stripeCOnfiguration.stripe_key){
             throw new Error("Stripe intialization failed. Please provde stripe secret key.")
@@ -150,10 +152,31 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
         case "checkout.session.completed":{
             const {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
 
-            await this.prismaService.$transaction([
-                this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded}}),
-                this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
-            ])
+            const session = await this.prismaService.session.findUnique({where:{id:sessionId}})
+
+            
+            if(session){
+                    
+                const [payment, participant] = await this.prismaService.$transaction([
+                    this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded}}),
+                    this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
+                ])
+                this.notificationService.createNotification({
+                    audience:Audience.USER,
+                    userId:participant.player_id,
+                    level:NotificationLevel.INFO,
+                    message:`You enrolled ${session?.title} successfully`,
+                    title:"Session enrolled",
+                })
+
+                this.notificationService.createNotification({
+                    audience:Audience.USER,
+                    userId:session?.coach_id,
+                    level:NotificationLevel.INFO,
+                    title:"New Enrollment!",
+                    message:`A player booked your ${session?.title} session.`
+                })
+            }
             break
         }
         case "payment_intent.payment_failed":{

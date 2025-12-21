@@ -40,7 +40,6 @@ export class NotificationService {
             this.prismaService.notification.count({where:{user_id:userId, audience:Audience.USER}, skip, take:pagination.limit})
         ])
 
-        console.log(notifications)
 
         // update notification read status
         await this.prismaService.notification.updateMany({where:{user_id:userId, is_read:false}, data:{is_read:true}})

@@ -75,6 +75,8 @@ model Session {
   participant_min_age Int
   started_at          DateTime
   completed_at        DateTime
+  report_till         DateTime?
+  report_valid        Boolean @default(false)
   max_participants    Int
   fee                 Float
   status              SessionStatus @default(CREATED)

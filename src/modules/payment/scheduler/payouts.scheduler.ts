@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { PayoutStatus, RefundRequestStatus, SessionStatus } from "generated/prisma/enums";
+import { Session } from "generated/prisma/client";
+import { Audience, NotificationLevel, ParticipantPaymentStatus, PayoutStatus, PlayerStatus, RefundRequestStatus, SessionStatus } from "generated/prisma/enums";
+import { NotificationService } from "src/modules/notification/notification.service";
 import { PrismaService } from "src/modules/prisma/prisma.service";
 
 @Injectable()
@@ -8,47 +10,66 @@ export class PayoutScheduler {
 
     private readonly logger = new Logger(PayoutScheduler.name)
 
-    constructor(private readonly prismaService:PrismaService){}
+    constructor(private readonly prismaService:PrismaService, private readonly notificationService:NotificationService){}
 
     @Cron(CronExpression.EVERY_10_SECONDS)
     async payoutsWatcher(){
         this.logger.log("payout scheduler running...")
-        const payouts  = await this.prismaService.duePayouts.findMany({where:{status:PayoutStatus.Pending}})
-
-        payouts.forEach(async payout => {
-            const refundRequests = await this.prismaService.refundRequest.findMany({where:{session_id:payout.session_id, status:RefundRequestStatus.Pending}, include:{payment:true}})
-            const totalHoldAmount = refundRequests.reduce((pre, refund) => pre+refund.payment.total_amount, 0)
-            const actualAmount = payout.total_amount - totalHoldAmount
-
-            if(refundRequests.length >= 0)
-                await this.prismaService.duePayouts.update({where:{id:payout.id}, data:{status:PayoutStatus.Hold}})
-            else 
-                console.log("release money")
-
-        })
+         const sessions = await this.prismaService.session.findMany({where:{status:SessionStatus.COMPLETED}})
+         sessions.forEach(async session => {
+            
+            await this.createPayout(session)
+         })
 
         this.logger.log("payout scheduler exiting...")
 
     }
 
-    async createPayout(){
+    async createPayout(session:Session){
 
-        const sessions = await this.prismaService.session.findMany({where:{status:SessionStatus.COMPLETED}})
+        //check does payout already created
+        const payout = await this.prismaService.duePayouts.findFirst({where:{
+            session_id:session.id
+        }})
 
-        sessions.forEach(async session => {
+        //if payout does not created yet, check the session to create payout
+        if(!payout){
 
-            const payout = await this.prismaService.duePayouts.findFirst({where:{
-                session_id:session.id
-            }})
-            if(!payout){
-                const refundRequest = await this.prismaService.refundRequest.findMany({where:{session_id:session.id, status:RefundRequestStatus.Pending}})
-                if(refundRequest.length <= 0){
-                    const acceptedRefundRequest = await this.prismaService.refundRequest.findMany({
-                        where:{session_id:session.id, status:RefundRequestStatus.Accepted}
-                    })
-                }
+            //does the session has any pending refund reequest
+            //if yes ignore that session
+            const refundRequest = await this.prismaService.refundRequest.findMany({
+                where:{session_id:session.id, status:RefundRequestStatus.Pending}})
+            
+            //if no pending session in the db
+            //calculate the payout amount 
+            if(refundRequest.length <= 0){
+
+                const paidParticipant = await this.prismaService.sessionParticipant.findMany({
+                    where:{session_id:session.id, player_status:PlayerStatus.Attending, payment_status:ParticipantPaymentStatus.Paid}
+                })
+
+                const session_fee = session.fee
+                const totalparticipatedPlayer = paidParticipant.length
+                
+                const totalPayableAmount = session_fee * totalparticipatedPlayer
+
+                const payout = await this.prismaService.duePayouts.create({data:{
+                    total_amount:totalPayableAmount,
+                    coach_id:session.coach_id,
+                    session_id:session.id,
+                }})
+
+                this.notificationService.createNotification({
+                    audience:Audience.USER,
+                    level:NotificationLevel.INFO,
+                    title:"Payout created",
+                    message:`Payout created for session ${session.title}`,
+                    userId:session.coach_id
+                })
+
             }
-        })
+        }
+        
         
     }
 
@@ -56,6 +77,10 @@ export class PayoutScheduler {
     async calculateRefundAmount(sessionId:string){
         const refundRequest = await this.prismaService.refundRequest.findMany({where:{session_id:sessionId, status:RefundRequestStatus.Accepted}})
         return refundRequest
+    }
+
+    async releasePayout(){
+        
     }
 
 }

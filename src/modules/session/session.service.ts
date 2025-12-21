@@ -17,6 +17,8 @@ import { GetPlayerEnrolledSessionDto } from "./dtos/get-player-enrolled-session.
 import { UserService } from "../user/user.service";
 import { PaymentService } from "../payment/payment.service";
 import { SessionNotifier } from "./providers/SessionNotifier.provider";
+import { getDistance } from "geolib";
+import { S3FIle } from "src/common/types/S3File.type";
 
 
 @Injectable()
@@ -44,12 +46,14 @@ export class SessionService {
      * @param file 
      * @returns session object
      */
-    async createSession(userId:string, createSessionDto:CreateSessionDto, file?:Express.Multer.File){
+    async createSession(userId:string, createSessionDto:CreateSessionDto, file?:S3FIle){
         
         
         /**
          * use session builder to create session object
          */
+
+        console.log(file)
 
         try{
             const sessionBuilder  = this.sessionBuilder
@@ -98,52 +102,63 @@ export class SessionService {
     * @returns 
     */
     async getSessions(userId:string , sessionQuery:SessionQueryDto){
-        console.log(sessionQuery)
+ 
         const skip = ( sessionQuery.page - 1 ) * sessionQuery.limit
-        // const targetLocation = {type:"Point", coordinates:sessionQuery.location}
-        // const results = await this.prismaService.$runCommandRaw({
-        //     aggregate: "sessions",
-        //     pipeline: [
-        //         {
-        //         $search: {
-        //             geoWithin: {
-        //             circle: {
-        //                 center: stargetLocation,
-        //                 radius: sessionQuery.radius
-        //             },
-        //             path: "location"
-        //             }
-        //         }
-        //         }
-        //     ],
-        //     cursor: {}
-        // });
+       
 
-
-        // console.log(results)s
-
-        const [sessions, total] = await this.prismaService.$transaction(
+        const [sessions] = await this.prismaService.$transaction(
             [ this.prismaService.session.findMany({
                 where:{
                     title:{contains:sessionQuery.query,mode:"insensitive"},
                     participants:{none:{player_id:userId}}, 
                     status:SessionStatus.CREATED}, 
-                skip, 
-                take:sessionQuery.limit,
                 include:{ _count:{select:{participants:true}}}
-            }),  
-            this.prismaService.session.count({
-                where:{title:{contains:sessionQuery.query,mode:"insensitive"},participants:{none:{player_id:userId}}, status:SessionStatus.CREATED}
             })])
 
-        const mappedSessions = sessions.map(session => {
+ 
+        const filteredSessions = sessions.filter(session => {
+            const sessionLocation = session.location
+            if(sessionLocation){
+                const distance = this.getSessionDistance(
+                    {latitude:sessionQuery.location[0], longitude:sessionQuery.location[1]}, 
+                    {latitude:sessionLocation["coordinates"][0], longitude:sessionLocation["coordinates"][1]})
+
+                    const radiusInMeter = sessionQuery.radius * 1609.34
+            
+                    return distance <= radiusInMeter
+            } 
+            
+            return false
+                
+        })
+
+        const slicedSessions = filteredSessions.slice(skip, skip+sessionQuery.limit)
+
+
+        const mappedSessions = slicedSessions.map(session => {
 
             return {...session, left: session.max_participants - session._count.participants}
         })
 
 
-        return {sessions:mappedSessions, total}
+        return {sessions:mappedSessions, total:filteredSessions.length}
 
+    }
+
+    private getSessionDistance(
+    startPont:{
+        latitude:number,
+        longitude:number
+    }, 
+    targetPoint:{
+        latitude:number,
+        longitude:number
+    }){
+
+        const distance = getDistance(startPont, targetPoint, 1)
+       
+
+        return distance
     }
 
     
@@ -219,12 +234,12 @@ export class SessionService {
 
          const [sessions, total] = await this.prismaService.$transaction([
             this.prismaService.session.findMany({
-                where:{coach_id:coachId, participants:{none:{player_status:PlayerStatus.Attending}}, status:SessionStatus.CREATED},
+                where:{coach_id:coachId, participants:{none:{player_status:PlayerStatus.Attending,payment_status:ParticipantPaymentStatus.Paid}}, status:SessionStatus.CREATED},
                 skip,
                 take:pagination.limit
             }), 
             this.prismaService.session.count({
-                where:{coach_id:coachId, participants:{none:{}}, status:SessionStatus.CREATED}
+                where:{coach_id:coachId, participants:{none:{player_status:PlayerStatus.Attending,payment_status:ParticipantPaymentStatus.Paid}}, status:SessionStatus.CREATED}
             })
          ])
         

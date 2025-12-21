@@ -1,7 +1,8 @@
 import { Expose, Transform, Type } from "class-transformer"
 import { CoachResponseDto } from "./coach-response.dto"
 import { ValidateNested } from "class-validator"
-import { SessionType } from "generated/prisma/enums"
+import { SessionStatus, SessionType } from "generated/prisma/enums"
+import { group } from "console"
 
 
 
@@ -77,5 +78,26 @@ export class SessionResponseDto {
         groups:["admin"]
     })
     type:SessionType
+
+    @Expose({
+        groups:["extra"]
+    })
+    enrolled:boolean
+
+    @Expose({
+        groups:["extra"]
+    })
+    
+    status:SessionStatus
+
+    @Expose({
+        groups:["extra"]
+    })
+    report_till:Date
+
+    @Expose({
+        groups:["extra"]
+    })
+    report_valid:Boolean
  
 }

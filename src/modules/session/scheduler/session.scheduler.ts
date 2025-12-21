@@ -15,14 +15,14 @@ export class SessionScheduler{
         this.logger.log("session scheduler running...")
        const sessions = await this.prismaService.session.findMany({where:{status:SessionStatus.ONGOING}})
 
-       await this.prismaService.$transaction(async prisma => {
-            sessions.forEach(async session => {
-                if(session.completed_at <= new Date(Date.now())){
-                    await prisma.session.update({where:{id:session.id}, data:{status:SessionStatus.COMPLETED}})
-                    console.log(`session completed: `, session.id)
-                }
-            })
-       })
+     
+        sessions.forEach(async session => {
+            if(session.completed_at <= new Date(Date.now())){
+                await this.prismaService.session.update({where:{id:session.id}, data:{status:SessionStatus.COMPLETED, report_valid:false}})
+                console.log(`session completed: `, session.id)
+            }
+        })
+    
        
        this.logger.log("session scheduler exiting...")   
     }
@@ -31,7 +31,8 @@ export class SessionScheduler{
     async markSessionAsOngoing(){
         this.logger.log("session ongoing scheduler running...")
         const currentDate = new Date(Date.now())
-        await this.prismaService.session.updateMany({where:{started_at:{lte:currentDate}, status:SessionStatus.CREATED}, data:{status:SessionStatus.ONGOING}})
+        await this.prismaService.session.updateMany({where:{started_at:{lte:currentDate}, status:SessionStatus.CREATED}, 
+            data:{status:SessionStatus.ONGOING, report_till:new Date(Date.now() + 24 * 60 * 60 * 1000), report_valid:true}})
         this.logger.log("session ongoing scheduler exiting...")
     }
 

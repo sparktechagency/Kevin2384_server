@@ -20,7 +20,7 @@ export class SessionQueryDto extends PaginationDto {
     })
     location:number[]
 
-    @IsNumber()
+
     @Min(0)
     @IsNotEmpty()
     @IsOptional()

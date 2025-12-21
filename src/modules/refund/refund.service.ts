@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { PaginationDto } from "src/common/dtos/pagination.dto";
-import { Audience, NotificationLevel, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
+import { Audience, NotificationLevel, ParticipantPaymentStatus, PlayerStatus, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
 import { NotificationService } from "../notification/notification.service";
 
 @Injectable()
@@ -51,15 +51,20 @@ export class RefundService {
             throw new NotFoundException("request not found")
         }
 
-        const acceptedRefundRequest = await this.prismaServce.refundRequest.update({where:{id:request.id}, data:{status:RefundRequestStatus.Accepted}})
+        const acceptedRefundRequest = await this.prismaServce.refundRequest.update({where:{id:request.id}, data:{status:RefundRequestStatus.Accepted,accepted_by:adminId}})
+
+        if(acceptedRefundRequest.refund_request_type === RefundRequestType.AdminApproval){
+
+            await this.prismaServce.sessionParticipant.update({where:{id:acceptedRefundRequest.participant_id}, data:{player_status:PlayerStatus.Cancelled, payment_status:ParticipantPaymentStatus.Refunded}})
+
+        }
 
         await this.notificationService.createNotification({
             userId:request.participant.player_id,
             title:"Refund request accepetd",
             message:`Your refund request has been accepted`,
             audience:Audience.USER,
-            level:NotificationLevel.INFO,
-            accepted_by:adminId
+            level:NotificationLevel.INFO
         })
 
         return acceptedRefundRequest
@@ -77,7 +82,7 @@ export class RefundService {
             throw new NotFoundException("request not found")
         }
 
-        const rejecteddRefundRequest = await this.prismaServce.refundRequest.update({where:{id:request.id}, data:{status:RefundRequestStatus.Cancelled, rejection_note:note}})
+        const rejectedRefundRequest = await this.prismaServce.refundRequest.update({where:{id:request.id}, data:{status:RefundRequestStatus.Cancelled, rejection_note:note}})
 
         await this.notificationService.createNotification({
             userId:request.participant.player_id,
@@ -85,10 +90,9 @@ export class RefundService {
             message:`Your refund request has been rejected`,
             audience:Audience.USER,
             level:NotificationLevel.INFO,
-            accepted_by:adminId
         })
 
-        return rejecteddRefundRequest
+        return rejectedRefundRequest
 
     }
 
