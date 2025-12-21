@@ -1,15 +1,26 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, RawBodyRequest } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
+import { ParticipantPaymentStatus, PaymentStatus, PlayerStatus } from "generated/prisma/enums";
 import stripeConfig, { StripeConfig } from "src/config/stripe.config";
+import { PrismaService } from "src/modules/prisma/prisma.service";
 import Stripe from "stripe";
 
 
+
+type MetaData  = {
+    paymentId:string
+    participantId:string
+    sessionId:string
+}
 
 @Injectable()
 export class StripeProvider {
     private readonly stripeCLient:Stripe
 
-    constructor(@Inject(stripeConfig.KEY) private readonly stripeCOnfiguration:ConfigType<typeof StripeConfig>){
+    constructor(
+        @Inject(stripeConfig.KEY) private readonly stripeCOnfiguration:ConfigType<typeof StripeConfig>,
+        private readonly prismaService:PrismaService
+){
         if(!stripeCOnfiguration.stripe_key){
             throw new Error("Stripe intialization failed. Please provde stripe secret key.")
         }
@@ -36,8 +47,6 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
                     product_data:{
                         name:item.title,
                         description:item.description,
-                        images:["https://unsplash.com/photos/two-people-paddleboarding-at-sunset-I-t-BBFyUWY"]
-                    
                     },
                     unit_amount:amount * 100
                 },
@@ -47,7 +56,7 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
         
     })
 
-    return checkoutSession
+    return checkoutSession.url
 }
 
     async createStripeAccount(){
@@ -119,6 +128,51 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
       
 
     }
+
+    async handleWebhook(stripe_signature:string, req:RawBodyRequest<Request>){
+
+    if(!this.stripeCOnfiguration.webhook_key){
+      throw new BadRequestException("webhook key is required")
+    }
+
+    if(!stripe_signature){
+        throw new BadRequestException("stripe signature is missing!")
+    }
+
+     const event = this.stripeCLient.webhooks.constructEvent(
+        req.rawBody!,
+        stripe_signature,
+        this.stripeCOnfiguration.webhook_key
+    );
+
+    switch(event.type){
+        
+        case "checkout.session.completed":{
+            const {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
+
+            await this.prismaService.$transaction([
+                this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded}}),
+                this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
+            ])
+            break
+        }
+        case "payment_intent.payment_failed":{
+            let {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
+
+            await this.prismaService.$transaction([
+                this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Failed}}),
+                this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Failed, player_status:PlayerStatus.Cancelled}})
+            ])
+
+            break
+        }
+        default:
+
+    }
+
+
+    return event.data
+  }
 
     
 }

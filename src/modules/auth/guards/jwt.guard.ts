@@ -42,7 +42,6 @@ export class JwtGuard implements CanActivate {
             throw err
         }
 
-      
     }
 
     private extractToken(request:Request){

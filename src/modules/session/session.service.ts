@@ -251,10 +251,10 @@ export class SessionService {
                 where:{coach_id:coachId, participants:{some:{player_status:PlayerStatus.Attending}}, status:SessionStatus.CREATED},
                 skip,
                 take:pagination.limit,
-                include:{_count:{select:{participants:true}}}
+                include:{_count:{select:{participants:{where:{player_status:PlayerStatus.Attending, payment_status:ParticipantPaymentStatus.Paid}}}}}
             }), 
             this.prismaService.session.count({
-                where:{coach_id:coachId, participants:{some:{}}, status:SessionStatus.CREATED}
+                where:{coach_id:coachId, participants:{some:{player_status:PlayerStatus.Attending, payment_status:ParticipantPaymentStatus.Paid}}, status:SessionStatus.CREATED}
             })
          ])
         const mappedActiveSession = sessions.map( session => {
@@ -596,7 +596,7 @@ export class SessionService {
      */
     private async isPlayerAlreadyEnrolled(playerId:string, sessionId:string){
 
-        const participant = await this.prismaService.sessionParticipant.count({where:{player_id:playerId, session_id:sessionId}})
+        const participant = await this.prismaService.sessionParticipant.count({where:{player_id:playerId, session_id:sessionId, player_status:PlayerStatus.Attending,payment_status:ParticipantPaymentStatus.Paid}})
 
         return participant > 0 ? true : false
     }

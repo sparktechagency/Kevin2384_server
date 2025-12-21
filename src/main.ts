@@ -10,7 +10,8 @@ import { join } from 'path';
 async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger:["debug", "error", "warn", "fatal","verbose", "log"]
+    logger:["debug", "error", "warn", "fatal","verbose", "log"],
+    rawBody:true
   });
 
 

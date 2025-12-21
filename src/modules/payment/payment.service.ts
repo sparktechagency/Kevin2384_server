@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, RawBodyRequest } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePaymentDto } from "./dtos/create-payment.dto";
 import { PaymentStatus, PaymentType, PayoutStatus } from "generated/prisma/enums";
@@ -173,6 +173,13 @@ export class PaymentService {
   
 
         return refundData
+    }
+
+    handleWebhook(stripeSignature:string, request:RawBodyRequest<Request>){
+
+        const webHookResult = this.stripeProvider.handleWebhook(stripeSignature, request)
+
+        return webHookResult
     }
 
 

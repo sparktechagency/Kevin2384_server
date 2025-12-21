@@ -321,6 +321,7 @@ enum PaymentStatus {
   Pending
   Succeeded
   Cancelled
+  Failed
 }
 
 enum NotificationLevel {
@@ -393,6 +394,7 @@ enum ParticipantPaymentStatus {
   Paid
   Pending
   Refunded
+  Failed
 }
 
 enum PaymentMethod {

@@ -25,30 +25,22 @@ import { SessionDetailsParamsDto } from "./dtos/session-details-params.dto";
 import { AvailableSessionResponseDto } from "./dtos/available-sesion-response.dto";
 import { ActiveSessionResponseDto } from "./dtos/active-session-response.dto";
 import { AdminSessionResponseDto } from "./dtos/admin-session-response.dto";
+import { S3Storage } from "src/common/storage/s3-storage";
 
 @Controller({path:"sessions"})
 export class SessionController {
 
     constructor(private readonly sessionService:SessionService){}
 
-    @UseInterceptors(FileInterceptor("banner", {
-        limits: { files: 1 },
-        storage: diskStorage({
-            destination:'./uploads/session_banner',
-            filename:(req, file, callback) => {
-                const uuid = randomUUID().toString()
-                const [_, ext] = file.originalname.split(".")
-                callback(null, `banner_${uuid}.${ext}`)
-            },
-        })
-
-    }))
+    @UseInterceptors(FileInterceptor("banner"))
 
     @Post()
     @ResponseMessage("session created succesfully")
     @Roles(UserRole.COACH)
     async createSession(@Body() createSessionDto:CreateSessionDto, @Req() request:Request, @UploadedFile() banner:Express.Multer.File){
         const payload = request['payload'] as TokenPayload
+
+        console.log(banner)
 
         console.log("Create session: ",createSessionDto)
         

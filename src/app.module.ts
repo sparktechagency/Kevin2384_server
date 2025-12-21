@@ -16,19 +16,29 @@ import { RolesGuard } from './common/guards/roles.guards';
 import { PrivacyPolicyModule } from './modules/privacy_policy/privacy_policy.module';
 import stripeConfig from './config/stripe.config';
 import { ScheduleModule } from '@nestjs/schedule';
+import awsConfig from './config/aws.config';
+import { MulterModule } from '@nestjs/platform-express';
+import { S3Storage } from './common/storage/s3-storage';
 
 
 
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig]}),
+    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig, awsConfig]}),
     // BullModule.forRoot({
     //   connection:{
     //     host:'localhost',
     //     port:6379
     //   }
     // }),
-    
+    MulterModule.registerAsync({
+      imports:[AppModule],
+      inject:[S3Storage],
+      useFactory:(s3Storage:S3Storage) => ({
+        storage:s3Storage.getStorage()
+      })
+    }),
+
     UserModule,
     AuthModule,
     SessionModule,
@@ -44,9 +54,10 @@ import { ScheduleModule } from '@nestjs/schedule';
   providers: [
     JwtService,
     { provide: APP_GUARD, useClass: JwtGuard },
-    { provide: APP_GUARD, useClass: RolesGuard }
-    
+    { provide: APP_GUARD, useClass: RolesGuard },
+    S3Storage
   ],
+  exports:[S3Storage]
 
 })
 

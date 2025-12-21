@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Post, Query, type RawBodyRequest, Req, Res } from "@nestjs/common";
 import { TokenPayload } from "../auth/types/TokenPayload.type";
 import { PaymentService } from "./payment.service";
 import { Roles } from "src/common/decorators/role.decorator";
@@ -8,6 +8,7 @@ import { PaginationDto } from "src/common/dtos/pagination.dto";
 import { plainToInstance } from "class-transformer";
 import { PaymentResponseDto } from "./dtos/payment-response.dto";
 import { RefundResponseDto } from "./dtos/refund-response.dto";
+import { Public } from "src/common/decorators/public.decorator";
 
 @Controller({
     path:"payments"
@@ -70,4 +71,15 @@ export class PaymentController{
             excludeExtraneousValues: true
         })
     }
+
+    @Post('webhook')
+    @Public()
+    async webhook(@Headers('stripe-signature') signature: string, @Req() req: RawBodyRequest<Request>) {
+    
+        const result = this.paymentService.handleWebhook(signature, req)
+   
+        return result
+        // ...
+    }
+
 }

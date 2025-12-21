@@ -13,6 +13,7 @@ import { PaymentService } from '../payment/payment.service';
 import { StripeProvider } from '../payment/providers/stripe.provider';
 import { NotificationService } from '../notification/notification.service';
 import { SessionNotifier } from './providers/SessionNotifier.provider';
+import { S3Storage } from 'src/common/storage/s3-storage';
 
 @Module({
     imports:[RefundModule, UserModule],
