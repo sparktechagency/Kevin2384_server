@@ -257,6 +257,8 @@ export class SessionService {
                 where:{coach_id:coachId, participants:{some:{player_status:PlayerStatus.Attending, payment_status:ParticipantPaymentStatus.Paid}}, status:SessionStatus.CREATED}
             })
          ])
+
+         
         const mappedActiveSession = sessions.map( session => {
             const {_count, ...sessionDetails} = session
             return {...sessionDetails, joined:_count.participants}
