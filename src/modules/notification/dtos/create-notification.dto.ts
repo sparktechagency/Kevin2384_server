@@ -1,4 +1,4 @@
-import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator"
+import { IsEnum, IsMongoId, IsNotEmpty, IsString } from "class-validator"
 import { Audience, NotificationLevel } from "generated/prisma/enums"
 
 export class CreateNotificationDto {
@@ -25,10 +25,5 @@ export class CreateNotificationDto {
     @IsNotEmpty()
     audience:Audience
 
-    @IsMongoId()
-    @IsOptional()
-    @IsNotEmpty()
-    @IsString()
-    accepted_by?:string
 
 }

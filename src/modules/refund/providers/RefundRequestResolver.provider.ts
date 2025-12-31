@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { SessionStatus } from "generated/prisma/enums";
 import { PrismaService } from "src/modules/prisma/prisma.service";
 import { RefundAutoAcceptedStrategy } from "../strategies/RefundAutoAccepted.strategy";
@@ -10,7 +10,6 @@ import { Session } from "generated/prisma/client";
 export class RefundRequestResolver {
 
     constructor(
-        private readonly prismaService:PrismaService,
 
         @Inject(RefundAutoAcceptedStrategy.INJECTION_KEY)
         private readonly refundAutoAccepted:RefundStrategy,
@@ -20,14 +19,20 @@ export class RefundRequestResolver {
     ){}
 
     async resolveRefundRequest(participantId:string, session:Session, reason:string){
+        try{
 
-
-        if(session.status === SessionStatus.CANCELLED || session.status === SessionStatus.CREATED){
+            if(session.status === SessionStatus.CANCELLED || session.status === SessionStatus.CREATED){
             await this.refundAutoAccepted.handleRefundRequest(participantId, session, reason)
         }
 
-        if(session.status === SessionStatus.ONGOING || session.status === SessionStatus.COMPLETED){
-            await this.adminApprovalRefundRequest.handleRefundRequest(participantId, session, reason)
+            if(session.status === SessionStatus.ONGOING){
+                await this.adminApprovalRefundRequest.handleRefundRequest(participantId, session, reason)
+            }
+        }catch(err){
+
+            console.log(err)
+
+            throw new InternalServerErrorException("Refund Processing failed!")
         }
 
     }

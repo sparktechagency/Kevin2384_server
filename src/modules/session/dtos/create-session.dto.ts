@@ -1,6 +1,7 @@
-import { Expose, Type } from "class-transformer"
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator"
+import { Expose, Transform, Type } from "class-transformer"
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator"
 import { SessionType } from "generated/prisma/enums"
+import { DAYS } from "../enums/days"
 
 export class CreateSessionDto {
 
@@ -92,10 +93,23 @@ export class CreateSessionDto {
     @Expose()
     additional_notes:string
 
-    @IsEnum(SessionType)
+    @Transform((obj) => {
+        return obj.value && obj.value === "true"
+    })
+    @IsBoolean()
     @IsNotEmpty()
-    @IsString()
+    is_recurrent:boolean
+
+    @IsArray()
+    @IsEnum(DAYS, {
+        each:true
+    })
     @IsOptional()
-    type:string
+    days:DAYS[]
+
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
+    end_date:Date
 
 }

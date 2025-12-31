@@ -1,14 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { RefundStrategy } from "./RefundStrategy.interface";
 import { PrismaService } from "src/modules/prisma/prisma.service";
-import { PaymentStatus, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
+import { Audience, NotificationLevel, PaymentStatus, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
 import { Session } from "generated/prisma/client";
+import { NotificationService } from "src/modules/notification/notification.service";
 
 @Injectable()
 export class AdminApprovalStrategy implements RefundStrategy{
     public static readonly INJECTION_KEY = "Admin_Approval_Strategy"
 
-    constructor(private readonly prismaService:PrismaService){}
+    constructor(private readonly prismaService:PrismaService, private readonly notificationService:NotificationService){}
 
     async handleRefundRequest(participantId:string, session:Session, reason:string) {
 
@@ -17,16 +18,32 @@ export class AdminApprovalStrategy implements RefundStrategy{
         if(!payment){
             throw new Error("payment not found")
         }
+        //create a refund request for admin approval
         
-        const refundRequest = await this.prismaService.refundRequest.create({data:{
-                    participant_id:participantId,
-                    session_id:session.id,
-                    status:RefundRequestStatus.Pending,
-                    payment_id:payment.id,
-                    refund_request_type:RefundRequestType.AdminApproval,
-                    refunded_amount:payment.session_fee,
-                    reason
-                }})
+        const refundRequest = await this.prismaService.refundRequest.create(
+            {data:{
+                participant_id:participantId,
+                session_id:session.id,
+                status:RefundRequestStatus.Pending,
+                payment_id:payment.id,
+                refund_request_type:RefundRequestType.AdminApproval,
+                refunded_amount:payment.session_fee,
+                reason
+            }})
+
+            const participant = await this.prismaService.sessionParticipant.findUnique({where:{id:participantId}})
+
+            if(participant){
+                this.notificationService.createNotification({
+                    userId:participant.player_id,
+                    audience:Audience.USER,
+                    level:NotificationLevel.INFO,
+                    title:"Refund Request Submitted for admin aproval",
+                    message:`Your refund request for session named " ${session.title}" submitted for admin approval. Admin will contact with you shortly.`
+                })
+            }
+                
+            
 
         return refundRequest
     }

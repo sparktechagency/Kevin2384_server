@@ -34,6 +34,7 @@ export class Session{
     additional_notes:string
 
     started_at:Date
+    
     completed_at:Date
 
     type: SessionType

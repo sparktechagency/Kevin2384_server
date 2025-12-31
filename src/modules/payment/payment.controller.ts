@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, type RawBodyRequest, Req, Res } from "@nestjs/common";
+import { Body, Controller, DefaultValuePipe, Get, Headers, Param, ParseIntPipe, Post, Query, type RawBodyRequest, Req, Res } from "@nestjs/common";
 import { TokenPayload } from "../auth/types/TokenPayload.type";
 import { PaymentService } from "./payment.service";
 import { Roles } from "src/common/decorators/role.decorator";
@@ -70,6 +70,14 @@ export class PaymentController{
         return plainToInstance(RefundResponseDto, result, {
             excludeExtraneousValues: true
         })
+    }
+
+    @Get("growth")
+    @Roles(UserRole.ADMIN)
+    async getEarningGrowth(@Query("year",new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe)year:number){
+        const result = await this.paymentService.getEarningGrowth(year)
+
+        return result
     }
 
     @Post('webhook')

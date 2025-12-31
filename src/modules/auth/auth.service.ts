@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Injectable, Logger, NotFoundException, Res, UnauthorizedException } from "@nestjs/common";
 import { SigninDto } from "./dtos/signin.dto";
 import { RegisterUserDto } from "./dtos/register-user.dto";
 import { UserService } from "../user/user.service";
@@ -9,6 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import emailVerificationTemplate from "src/common/templates/emailVerification.template";
 import { JwtService } from "@nestjs/jwt";
 import { User } from "generated/prisma/client";
+
 
 
 
@@ -58,6 +59,8 @@ export class AuthService {
             return {email_verified:false, message:"A verification code sent to your email. Kindly verify your email first."}
         }
 
+        await this.userService.updateFcmToken(user.id, signInDto.fcm_token)
+
         const token = await this.signJwtToken(user)
         this.logger.log(`${user.fullName} logged in.`)
 
@@ -79,13 +82,17 @@ export class AuthService {
         if(!user){
             throw new NotFoundException("No account is associated with this email address. Please sign up first.")
         }
-        if(user.role !== 'ADMIN'){
-            throw new BadRequestException("You are not authorized to access this resource.")
-        }
-        if(! (await this.comparePassword(signInDto.password, user.password))){
+        console.log(user)
 
+        if(user.role !== 'ADMIN'){
+            throw new UnauthorizedException("You are not authorized to access this resource.")
+        }
+        const passwordMatched = await this.comparePassword(signInDto.password, user.password)
+
+        if(!passwordMatched){
             throw new BadRequestException("credentials does not matched!")
         }
+
         const token = await this.signJwtToken(user)
         this.logger.log(`Admin ${user.fullName} logged in.`)
 
@@ -99,9 +106,10 @@ export class AuthService {
      */
 
     private async signJwtToken(user:User){  
-        const token = await this.jwtService.signAsync({id:user.id, role:user.role, email:user.email, email_verified:user.email_verified}, {
-            expiresIn: "90d"
-        })
+        const token = await this.jwtService.signAsync(
+            {id:user.id, role:user.role, email:user.email, email_verified:user.email_verified}, 
+            {
+            expiresIn: "90d"})
 
         return token
     }
@@ -180,8 +188,8 @@ export class AuthService {
      */
 
     private async comparePassword(password:string, hash:string):Promise<boolean>{
-
-        return await this.encoder.compare(password, hash)
+        const res = await this.encoder.compare(password, hash)
+        return res
     }
 
     /**

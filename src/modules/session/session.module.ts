@@ -14,9 +14,31 @@ import { StripeProvider } from '../payment/providers/stripe.provider';
 import { NotificationService } from '../notification/notification.service';
 import { SessionNotifier } from './providers/SessionNotifier.provider';
 import { S3Storage } from 'src/common/storage/s3-storage';
+import { MulterModule } from '@nestjs/platform-express';
+import { AwsModule } from '../aws/aws.module';
+import multerS3 from 'multer-s3'
+import { NotificationModule } from '../notification/notification.module';
+import { AdminApprovalStrategy } from '../refund/strategies/AdminApprovalRefundRequest.strategy';
+import { AdminCancelStrategy } from './strategies/AdminCancelStrategy';
 
 @Module({
-    imports:[RefundModule, UserModule],
+    imports:[RefundModule, UserModule, NotificationModule,
+        MulterModule.registerAsync({
+            imports:[AwsModule],
+            useFactory:(s3Storage:S3Storage)=> ({
+                storage: multerS3({
+                s3: s3Storage.getClient(),
+                bucket: 'kevin2384-s3-bucket',
+                // acl: 'public-read', // optional
+                key: (req, file, cb) => {
+                    cb(null, `${Date.now()}-${file.originalname}`);
+                },
+        }),
+        limits:{fileSize:100000}
+            }),
+            inject:[S3Storage]
+        })
+    ],
     controllers:[SessionController],
     providers:[
         SessionService,
@@ -34,6 +56,10 @@ import { S3Storage } from 'src/common/storage/s3-storage';
         {
             provide: PlayerCancelStrategy.INJECTION_KEY,
             useClass: PlayerCancelStrategy
+        },
+        {
+            provide:AdminCancelStrategy.INJECTION_KEY,
+            useClass:AdminCancelStrategy
         }
     ]
 })

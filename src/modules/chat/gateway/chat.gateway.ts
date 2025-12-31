@@ -26,10 +26,8 @@ import { MessageAcknowledgementDto } from "../dtos/message-acknowledgement.dto";
   }),
 )
 @Injectable()
-
 export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{
 
-      
     @WebSocketServer()
     server:Server
 
@@ -62,9 +60,8 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             const user = await this.userService.findUserById(userId)
 
             if(!user){
-                client.emit(EMIT_EVENTS.ERROR, {message:"Authentication failed"})
-                client.disconnect()
-                return
+                
+                throw new Error("use not found")
             }
             // Store the userId and its associated client.id
             this.usersSocket.set(userId, client.id)
@@ -74,7 +71,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             client.emit(EMIT_EVENTS.SUCCESS, {message:"User Successfully Connected With Socket"})
             
         }catch(err){
-            client.emit(EMIT_EVENTS.ERROR, err)
+            client.emit(EMIT_EVENTS.ERROR, err.message)
             client.disconnect()
             console.log("Authentication error", err)
            

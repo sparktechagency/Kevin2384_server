@@ -1,10 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateUserDto } from "./dtos/create-user.dto";
 import { EncoderProvider } from "src/common/providres/encoder.provider";
 import { UserQueryDto } from "./dtos/user-query.dto";
 import { PaginationDto } from "src/common/dtos/pagination.dto";
-import { OtpFor, OtpStatus, UserRole } from "generated/prisma/enums";
+import { OtpFor, OtpStatus, SessionStatus, UserRole } from "generated/prisma/enums";
 import { ChangePasswordDto } from "./dtos/change-password.dto";
 import { DeleteAccountDto } from "./dtos/delete-account.dto";
 import { ChangeEmailDto } from "./dtos/change-email.dto";
@@ -38,15 +38,17 @@ export class UserService{
      */
     async addUser(createUserDto:CreateUserDto){
         let avatar:string | undefined
+        let sport: string | undefined
 
         if(createUserDto.role === UserRole.PLAYER){
             avatar = defaultConfig.DEFAULT_PLAYER_IMAGE
         }else {
             avatar = defaultConfig.DEFAULT_COACH_IMAGE
+            sport = createUserDto.sport
         }
 
         const hashedPassword = await this.encoder.hashPassword(createUserDto.password, 10)
-        const user = await this.prismaService.user.create({data:{...createUserDto, password:hashedPassword, avatar}})
+        const user = await this.prismaService.user.create({data:{...createUserDto, password:hashedPassword, avatar, sport}})
 
         return user
     }
@@ -157,9 +159,9 @@ export class UserService{
         const {subscriptions, _count, ...rest} = user
         const isSubscriptionActive = subscriptions.some(sub => sub.status === "ACTIVE")
         const current_subscription_end_at = isSubscriptionActive ? subscriptions[0].current_period_end : null 
+        
         return {...rest, is_subscription_active:isSubscriptionActive,current_subscription_end_at, total_created_sessions:_count.created_sessions}
       })
-
 
       return {users:mappedUsers, page:query.page,limit:query.limit, total, pages:Math.ceil(total / query.limit)}
 
@@ -175,8 +177,8 @@ export class UserService{
 
         let queryObj:Record<string, any> = {}
     
-        if(query.fullName){
-            queryObj.fullName = {contains:query.fullName, mode:"insensitive"}
+        if(query.query){
+            queryObj.fullName = {contains:query.query, mode:"insensitive"}
         }
 
         if(Object.keys(query).includes("email_verified")){
@@ -219,10 +221,16 @@ export class UserService{
 
     async deleteUserById(userId:string){
 
-        const user = await this.prismaService.user.findUnique({where:{id:userId}})
+        const user = await this.prismaService.user.findUnique({where:{id:userId}, include:{created_sessions:{where:{status:{in:[SessionStatus.CREATED, SessionStatus.ONGOING]}}}}})
 
         if(!user){
             throw new NotFoundException("user not found")
+        }
+
+        if(user.role === UserRole.COACH){
+            if(user.created_sessions.length > 0){
+                
+            }
         }
 
         const updatedUser = await this.prismaService.user.update({where:{id:user.id}, data:{is_deleted:true}})
@@ -290,25 +298,31 @@ export class UserService{
      * @param resetPasswordDto 
      */
     async resetPassword(resetPasswordDto:ResetPasswordDto){
+        try{
+            const otp = await this.prismaService.otp.findUnique({where:{id:resetPasswordDto.token, otp_status:OtpStatus.VERIFIED}})
+
+            if(!otp){
+                throw new BadRequestException("reset password token is invalid")
+            }
+
+            if(resetPasswordDto.newPassword !== resetPasswordDto.confirmPassword){
+                throw new BadRequestException("password doest not matched")
+            }
+
+            const user = await this.prismaService.user.findFirst({where:{email:otp.email}})
+
+            if(!user){
+                throw new NotFoundException("User not found")
+            }
+
+            await this.prismaService.otp.update({where:{id:otp.id}, data:{otp_status:OtpStatus.INVALID}})
+
+            return await this.updatePassword(user.id, resetPasswordDto.newPassword)
+        }catch(err){
+            console.log(err)
+            throw new InternalServerErrorException("Reset passsword failed")
+        }
         
-        const otp = await this.prismaService.otp.findUnique({where:{id:resetPasswordDto.token, otp_status:OtpStatus.VERIFIED}})
-
-        if(!otp){
-            throw new BadRequestException("reset password token is invalid")
-        }
-        if(resetPasswordDto.newPassword !== resetPasswordDto.confirmPassword){
-            throw new BadRequestException("password doest not matched")
-        }
-
-        const user = await this.prismaService.user.findFirst({where:{email:otp.email}})
-
-        if(!user){
-            throw new NotFoundException("User not found")
-        }
-
-        await this.prismaService.otp.update({where:{id:otp.id}, data:{otp_status:OtpStatus.INVALID}})
-
-        return await this.updatePassword(user.id, resetPasswordDto.newPassword)
     }
     /**
      * 
@@ -475,6 +489,7 @@ export class UserService{
     async toggleUserBlockStatus(userId:string){
 
         const user = await this.prismaService.user.findUnique({where:{id:userId}})
+
         if(!user){
             throw new NotFoundException("User not found")
         }
@@ -554,6 +569,44 @@ export class UserService{
 
         console.log(`User ${user.fullName} has been warned by Admin ${adminUser.fullName} for reason: ${reason}`)
        
+    }
+
+    async getPlayerGrowth(year:number){
+
+        const start = new Date(year, 0, 1)
+        const end = new Date(year, 11, 30)
+        const players = await this.prismaService.user.findMany({where:{role:UserRole.COACH, createdAt:{gte:start, lte:end}}})
+
+        const monthsData = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total: 0 }))
+
+        players.forEach(player => {
+            let createdMonth = new Date(player.createdAt).getMonth()
+
+            monthsData[createdMonth].total+=1
+        })
+
+        return monthsData
+    }
+
+    async getAllCoaches(paginationDto:PaginationDto){
+
+        const skip = (paginationDto.page - 1) * paginationDto.limit
+
+        const coaches = await this.prismaService.user.findMany({
+            where:{role:UserRole.COACH},
+            orderBy:{createdAt:"desc"},
+            skip,
+            take:paginationDto.limit
+        })
+
+        const count = await this.prismaService.user.count({where:{role:UserRole.COACH}})
+
+        return {coaches, total:count}
+
+    }
+
+    async updateFcmToken(userId:string, token:string){
+        await this.prismaService.user.update({where:{id:userId}, data:{fcm_token:token}})
     }
 
 }

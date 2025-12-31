@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsIn, IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { UserRole } from "generated/prisma/enums";
 import { CreateUserDto } from "src/modules/user/dtos/create-user.dto";
 
@@ -23,6 +23,11 @@ export class RegisterUserDto extends CreateUserDto{
         @IsNotEmpty()
         @MinLength(6)
         password: string
+
+        @IsString()
+        @IsNotEmpty()
+        @IsOptional()
+        sport?:string
 
         @IsIn([UserRole.COACH, UserRole.PLAYER])
         @IsNotEmpty()

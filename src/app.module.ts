@@ -19,25 +19,24 @@ import { ScheduleModule } from '@nestjs/schedule';
 import awsConfig from './config/aws.config';
 import { MulterModule } from '@nestjs/platform-express';
 import { S3Storage } from './common/storage/s3-storage';
+import { AwsModule } from './modules/aws/aws.module';
+import { MulterConfigProvider } from './common/providres/multer.provider';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import jwtConfig from './config/jwt.config';
+import firebaseConfig from './config/firebase.config';
 
 
 
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig, awsConfig]}),
+    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig, awsConfig, jwtConfig, firebaseConfig]}),
     // BullModule.forRoot({
     //   connection:{
     //     host:'localhost',
     //     port:6379
     //   }
     // }),
-    MulterModule.registerAsync({
-      imports:[AppModule],
-      inject:[S3Storage],
-      useFactory:(s3Storage:S3Storage) => ({
-        storage:s3Storage.getStorage()
-      })
-    }),
 
     UserModule,
     AuthModule,
@@ -47,7 +46,17 @@ import { S3Storage } from './common/storage/s3-storage';
     ChatModule,
     NotificationModule,
     PrivacyPolicyModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    AwsModule,
+    ThrottlerModule.forRoot({
+      throttlers:[
+        {
+          ttl:60000,
+          limit:20
+        }
+      ]
+    }),
+    DashboardModule
   ],
   
   controllers: [AppController],
@@ -55,9 +64,12 @@ import { S3Storage } from './common/storage/s3-storage';
     JwtService,
     { provide: APP_GUARD, useClass: JwtGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
-    S3Storage
+    {
+      provide:APP_GUARD,
+      useClass: ThrottlerGuard
+    }
+
   ],
-  exports:[S3Storage]
 
 })
 

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { LocationCords, Session } from "../models/Session.model";
 import { SessionType } from "generated/prisma/enums";
+import type { S3FIle } from "src/common/types/S3File.type";
 
 
 export class SessionBuilder{
@@ -49,10 +50,10 @@ export class SessionBuilder{
         return this
     }
 
-    setBanner(bannerUrl?:Express.Multer.File){
+    setBanner(bannerUrl?:S3FIle){
 
         if(bannerUrl){
-            this.session.banner = bannerUrl.path
+            this.session.banner = bannerUrl.location
         }
 
         return this
@@ -83,9 +84,9 @@ export class SessionBuilder{
     private setStartDate(datetime:Date){
         const startDate = new Date(datetime)
         const currentDate = new Date(Date.now())
-        console.log(startDate)
-        console.log(currentDate)
-        if(startDate <= currentDate){
+        const utcdate = this.getUtcDate(currentDate.toLocaleDateString(), currentDate.toLocaleTimeString())
+
+        if(startDate <= utcdate){
             throw new Error("Error occured during setting start time. Start date must be in future.")
         }
         this.session.started_at = startDate
@@ -100,7 +101,6 @@ export class SessionBuilder{
     setStartAt(date:string, time:string){
 
         const startDate = this.getUtcDate(date,time)
-        console.log("Utc date", startDate)
         const completedDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
      
         this.setStartDate(new Date(startDate))
@@ -117,7 +117,7 @@ export class SessionBuilder{
         const [hours, minutes] = this.getTimeParts(time)
         const [m,d,y] = this.getDateParts(date)
     
-        return  new Date(y,m-1,d,hours,minutes)
+        return  new Date(Date.UTC(y,m-1,d,hours,minutes))
 
     }
 
@@ -133,10 +133,7 @@ export class SessionBuilder{
         return date.split("/").map(part => Number(part))
     }
 
-    private getTimeZoneOffset(){
-        return new Date().getTimezoneOffset()
-    }
-
+    
     setMinimumAge(age:number){
         if(age <= 0){
             throw new Error("Invalid age")
@@ -167,6 +164,12 @@ export class SessionBuilder{
     setFee(fee:number){
         if(fee < 0){
             throw new Error("invalid fee. Fee must be 0 or more")
+        }
+
+        if(fee == 0 ){
+            this.setType(SessionType.Free)
+        }else {
+            this.setType(SessionType.Paid)
         }
 
         this.session.fee = fee

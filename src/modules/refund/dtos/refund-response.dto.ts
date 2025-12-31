@@ -1,12 +1,16 @@
 import { Expose, Type } from "class-transformer"
 import { ValidateNested } from "class-validator"
 import { PaginationResponseDto } from "src/common/dtos/pagination-response.dto"
+import { CoachResponseDto } from "src/modules/session/dtos/coach-response.dto"
 
 export class RefundResponse{
+
+    @Expose()
+    id:string
     @Expose({
         name:"createdAt"
     })
-    requested_at:string
+    submitted_at:string
 
     @Expose()
     player_name:string
@@ -26,6 +30,16 @@ export class RefundResponse{
     @Expose()
     reason:string
 
+    @Expose()
+    rejection_note:string
+
+    @Expose({
+        groups:["admin"]
+    })
+    @ValidateNested()
+    @Type(() => CoachResponseDto)
+    coach:CoachResponseDto
+
 }
 
 export class RefundResponseDto extends PaginationResponseDto {
@@ -34,6 +48,7 @@ export class RefundResponseDto extends PaginationResponseDto {
     @ValidateNested()
     @Type(() => RefundResponse)
     refunds:RefundResponse[]
-    
+
+
 
 }

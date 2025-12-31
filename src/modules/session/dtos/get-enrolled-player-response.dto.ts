@@ -27,6 +27,7 @@ class EnrolledPlayerAndSessionResponseDto {
     @Expose()
     @ValidateNested()
     @Type(() => PlayerResponseDto)
+
     player:PlayerResponseDto
 
     @Expose()

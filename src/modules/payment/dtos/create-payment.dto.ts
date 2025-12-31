@@ -15,8 +15,4 @@ export class CreatePaymentDto{
     @IsEnum(PaymentType)
     payment_type:PaymentType
 
-    @IsNumber()
-    @IsNotEmpty()
-    amount:number
-
 }

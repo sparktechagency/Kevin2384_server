@@ -1,7 +1,8 @@
 import { Expose, Transform, Type } from "class-transformer"
 import { CoachResponseDto } from "./coach-response.dto"
 import { ValidateNested } from "class-validator"
-import { SessionType } from "generated/prisma/enums"
+import { SessionStatus, SessionType } from "generated/prisma/enums"
+import { group } from "console"
 
 
 
@@ -31,7 +32,7 @@ export class SessionResponseDto {
     started_at:string
 
 
-    @Expose({groups:["public", "short"]})
+    @Expose({groups:["public", "short", "admin"]})
     title:string
 
     @Expose({groups:["public", "short", "admin"]})
@@ -43,7 +44,7 @@ export class SessionResponseDto {
     @Expose({groups:["coach", "admin"]})
     joined:number
 
-    @Expose({groups:["enrolled", "coach"]})
+    @Expose({groups:["enrolled", "coach", "admin"]})
     address:string
 
     @Expose({groups:["enrolled", "public", "admin"]})
@@ -51,7 +52,7 @@ export class SessionResponseDto {
     @Type(() => CoachResponseDto)
     coach:CoachResponseDto
 
-    @Expose({groups:["public"]})
+    @Expose({groups:["public", 'admin']})
     max_participants:number
 
     @Expose({groups:["public"]})
@@ -59,8 +60,6 @@ export class SessionResponseDto {
 
     @Expose({groups:["public"]})
     equipments:string[]
-
-
 
     @Expose({groups:["public", "short"]})
     description:string
@@ -77,5 +76,50 @@ export class SessionResponseDto {
         groups:["admin"]
     })
     type:SessionType
+
+    @Expose({
+        groups:["extra"]
+    })
+    enrolled:boolean
+
+    @Expose({
+        groups:["extra"]
+    })
+    
+    status:SessionStatus
+
+    @Expose({
+        groups:["extra"]
+    })
+    report_till:Date
+
+    @Expose({
+        groups:["extra"]
+    })
+    report_valid:boolean
+
+    @Expose({
+        groups:["extra"]
+    })
+    refund_requested:boolean
+
+    @Expose({
+        groups:["extra"]
+    })
+    free_session:boolean
+
+    @Expose({
+        groups:['room', "enrolled"]
+    })
+    room_id:string
+
+    @Expose({
+        groups:['admin']
+    })
+    is_cancelable:boolean
+    @Expose({
+        groups:["public"]
+    })
+    platform_fee:number
  
 }

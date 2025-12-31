@@ -25,9 +25,11 @@ model User {
   phone          String
   password       String
   role           UserRole
+  sport          String?
   email_verified Boolean  @default(false)
   is_deleted     Boolean  @default(false)
   is_blocked     Boolean  @default(false)
+  fcm_token     String?
 
   participated_sessions SessionParticipant[]
   created_sessions      Session[]
@@ -45,6 +47,17 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+model PlatformFee {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  fee  Float  @default(0.0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_fee")
+
 }
 
 model Subscription {
@@ -75,24 +88,70 @@ model Session {
   participant_min_age Int
   started_at          DateTime
   completed_at        DateTime
+  report_till         DateTime?
+  report_valid        Boolean @default(false)
   max_participants    Int
   fee                 Float
   status              SessionStatus @default(CREATED)
   objectives          String[]
   equipments          String[]
-  type                SessionType?
-
+  type                SessionType? 
   coach           User                 @relation(references: [id], fields: [coach_id], onDelete: Cascade)
   participants    SessionParticipant[]
   payments        Payment[]
   refund_requests RefundRequest[]
   payout          DuePayouts?
+  reports         Report[]
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("sessions")
 }
+
+// model SessionTemplate{
+//   id                  String        @id @default(auto()) @map("_id") @db.ObjectId
+//   banner              String
+//   coach_id            String        @db.ObjectId
+//   title               String
+//   location            Json
+//   description         String
+//   additional_notes    String?
+//   address             String
+//   participant_min_age Int
+//   started_at          DateTime
+//   objectives          String[]
+//   equipments          String[]
+//   completed_at        DateTime
+//   max_participants    Int
+//   fee                 Float
+//   recurringData     RecurringData?
+//   type                SessionType? 
+//   coach             User   @relation(references: [id], fields: [coach_id])
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@map("templates")
+// }
+
+// model RecurringData {
+//   id              String  @id  @default(auto())  @map("_id")  @db.ObjectId
+//   template_id      String  @db.ObjectId @unique
+//   recurrence_rule String
+//   started_at       DateTime
+//   latest_published    DateTime
+//   next_published     DateTime?
+//   ended_at        DateTime
+//   status          RecurringStatus @default(ACTIVE)
+//   template        SessionTemplate  @relation(references: [id], fields: [template_id])
+
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime  @updatedAt
+
+//   @@map("recurring_data")
+// }
 
 model SessionParticipant {
   id             String                   @id @default(auto()) @map("_id") @db.ObjectId
@@ -106,6 +165,7 @@ model SessionParticipant {
   player         User           @relation(references: [id], fields: [player_id], onDelete: Cascade)
   refund_request RefundRequest?
   payments       Payment[]
+  reports         Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -160,6 +220,26 @@ model RefundRequest {
   updatedAt DateTime @updatedAt
 
   @@map("refund_requests")
+}
+
+model Report {
+  id      String   @id  @default(auto()) @map("_id")  @db.ObjectId
+  session_id    String @db.ObjectId
+  participant_id  String  @db.ObjectId
+  description  String
+  need_refund   Boolean   @default(false)
+  status        ReportStatus  @default(Pending)
+  replied_by    String?   @db.ObjectId
+  reply         String? 
+
+  session  Session  @relation(references: [id], fields: [session_id])
+  participant   SessionParticipant @relation(references: [id], fields: [participant_id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reports")
+
 }
 
 model SessionCancelRequest {
@@ -289,6 +369,16 @@ model SitePolicy {
 
 }
 
+enum ReportStatus {
+  Pending
+  Replied
+}
+
+enum RecurringStatus {
+  ACTIVE
+  CANCELLED
+}
+
 enum RefundRequestType {
   AdminApproval
   AutoAccepted
@@ -368,6 +458,7 @@ enum RefundRequestStatus {
   Completed
   Cancelled
   Accepted
+  Paid
 }
 
 enum SessionCancelRequestStatus {

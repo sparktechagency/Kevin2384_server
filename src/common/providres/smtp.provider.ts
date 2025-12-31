@@ -7,15 +7,14 @@ import mailerConfig, { MailerConfig } from "src/config/mailer.config";
 export class SMTPProvider {
 
 
-
     private transporter:Transporter
     constructor(@Inject(mailerConfig.KEY)private readonly mailerConfiguration:ConfigType<typeof MailerConfig>){
 
         this.transporter = nodemailer.createTransport({
             service:'gmail',
             auth:{
-                user:mailerConfiguration.user,
-                pass: mailerConfiguration.password
+                user: this.mailerConfiguration.user,
+                pass: this.mailerConfiguration.password
             }
         })
     }

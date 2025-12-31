@@ -1,14 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Query, Req } from "@nestjs/common";
 import { RefundService } from "./refund.service";
 import { PaginationDto } from "src/common/dtos/pagination.dto";
 import { TokenPayload } from "../auth/types/TokenPayload.type";
 import { Roles } from "src/common/decorators/role.decorator";
 import { UserRole } from "generated/prisma/enums";
 import { plainToInstance } from "class-transformer";
-import { RefundResponseDto } from "./dtos/refund-response.dto";
+import { RefundResponse, RefundResponseDto } from "./dtos/refund-response.dto";
 import { AcceptRefundRequestDto } from "./dtos/accept-request.dto";
 import { RejectRefundRequestDto } from "./dtos/reject-request.dto";
 import { ResponseMessage } from "src/common/decorators/apiResponseMessage.decorator";
+import { GetRefundDto } from "./dtos/get-refund.dto";
 
 @Controller({
     path:"refunds"
@@ -55,6 +56,31 @@ export class RefundController {
 
         return result
 
+    }
+
+    @Get(":sessionId")
+    @ResponseMessage("Refund data fetched successfully")
+    async getRefundData(@Req() request:Request, @Param() getRefundDto:GetRefundDto){
+
+        const tokenPayload = request['payload'] as TokenPayload
+
+        const refundRequest = await this.refundService.getRefundStatus(tokenPayload.id, getRefundDto.sessionId)
+
+        return plainToInstance(RefundResponse, refundRequest, {
+            excludeExtraneousValues: true
+        })
+    }
+
+    @Get()
+    @ResponseMessage("refunds list fetched successfully")
+    @Roles(UserRole.ADMIN)
+    async getRefundRequests(@Req() request:Request, @Query() pagination:PaginationDto){
+        const result = await this.refundService.getRefundRequests(pagination)
+
+        return plainToInstance(RefundResponseDto, result, {
+            excludeExtraneousValues: true,
+            groups:['admin']
+        })
     }
 
 }
