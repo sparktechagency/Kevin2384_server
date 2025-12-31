@@ -1,5 +1,5 @@
 import { Transform, TransformFnParams } from "class-transformer"
-import { IsEmail, IsNotEmpty, IsString } from "class-validator"
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from "class-validator"
 
 export class SigninDto {
 
@@ -17,4 +17,9 @@ export class SigninDto {
     // @IsEnum(UserRole)
     // @IsNotEmpty()
     // role:UserRole 
+
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
+    fcm_token:string
 }

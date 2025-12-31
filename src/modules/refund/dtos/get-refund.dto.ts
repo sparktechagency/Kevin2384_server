@@ -1,9 +1,9 @@
 import { IsMongoId, IsNotEmpty, IsString } from "class-validator";
 
-export class TogggleBlockUserDto {
+export class GetRefundDto{
 
+    @IsMongoId()
     @IsString()
     @IsNotEmpty()
-    @IsMongoId()
-    userId:string
+    sessionId:string
 }

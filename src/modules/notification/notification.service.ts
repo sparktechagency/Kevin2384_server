@@ -1,17 +1,24 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateNotificationDto } from "./dtos/create-notification.dto";
 import { PaginationDto } from "src/common/dtos/pagination.dto";
-import { Audience } from "generated/prisma/enums";
+import { Audience, NotificationLevel } from "generated/prisma/enums";
+import { FireBaseClient } from "./providers/firebase.provider";
 
 
 @Injectable()
 export class NotificationService {
 
     constructor(private readonly prismaService:PrismaService,
+        private readonly firebaseClient:FireBaseClient
     ){}
 
     async createNotification(createNotificationDto:CreateNotificationDto){
+
+        const user = await this.prismaService.user.findFirst({where:{id:createNotificationDto.userId}})
+        if(!user){
+            throw new BadRequestException("user not found")
+        }
 
         const createdNotification = await this.prismaService.notification.create({
             data:{
@@ -22,6 +29,19 @@ export class NotificationService {
                 audience:createNotificationDto.audience
             }
         })
+        
+        try{
+            
+            if(createdNotification.audience === Audience.USER && [NotificationLevel.INFO, NotificationLevel.CRITICAL, NotificationLevel.WARNING].includes(createdNotification.level)){
+                console.log(user)
+                if(user.fcm_token){
+                    this.firebaseClient.sendPushNotification(user.fcm_token, createNotificationDto.title, createNotificationDto.message)
+                }
+            }
+
+        }catch(err){
+            console.log("Push notification sending failed: ", err)
+        }
 
         return createdNotification
 
@@ -59,6 +79,8 @@ export class NotificationService {
             }),
             this.prismaService.notification.count({where:{audience:Audience.ADMIN}})
         ])
+
+        await this.prismaService.notification.updateMany({where:{audience:Audience.ADMIN, is_read:false}, data:{is_read:true}})
 
         return {adminNotifications, total}
     }

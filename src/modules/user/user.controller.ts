@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, DefaultValuePipe, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { CreateUserDto } from "./dtos/create-user.dto";
 import { UserQueryDto } from "./dtos/user-query.dto";
@@ -143,6 +143,7 @@ export class UserController {
     @ResponseMessage("User block status updated successfully")
     @Roles(UserRole.ADMIN)
     async toggleBlockUser(@Body() toggoleBlockUserDto:TogggleBlockUserDto){
+        console.log(toggoleBlockUserDto)
         return this.userService.toggleUserBlockStatus(toggoleBlockUserDto.userId)
     }
 
@@ -151,8 +152,6 @@ export class UserController {
     @Roles(UserRole.ADMIN)
     async warnUser(@Req() request:Request, @Body() warnUserDto:WarnUserDto){
         const tokenPayload = request['payload'] as TokenPayload
-
-
         return this.userService.warnUser(tokenPayload.id, warnUserDto.userId, warnUserDto.reason)
     }
 
@@ -169,5 +168,25 @@ export class UserController {
       
         return this.userService.deleteUserById(userId)
     }
+
+    @Get("growth")
+    @Roles(UserRole.ADMIN)
+    @ResponseMessage("players growth fetche successfully")
+    async getPlayersGrowth(@Req() request:Request, @Query("year",new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year:number){
+
+        const results = await this.userService.getPlayerGrowth(year)
+
+        return results
+    }
+
+    @Get("coaches")
+    @Roles(UserRole.ADMIN)
+    @ResponseMessage("coaches fetched successfully")
+    async getAllCoaches(@Query() pagination:PaginationDto){
+        const result = await this.userService.getAllCoaches(pagination)
+
+        return result
+    }
+
 
 }

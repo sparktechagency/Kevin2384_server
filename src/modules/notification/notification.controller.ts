@@ -31,10 +31,9 @@ export class NotificationController {
     async getUserNotifications(@Req() request:Request, @Query()pagination:PaginationDto){
     
         const tokenPayload = request['payload'] as TokenPayload
-
+        console.log(tokenPayload)
         const notifications = await this.notificationService.getNotifications(tokenPayload.id, pagination)
      
-
         return plainToInstance(UserNotificationsResponseDto, notifications, {
             excludeExtraneousValues: true
         })

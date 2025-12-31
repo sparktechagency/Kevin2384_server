@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BullModule } from '@nestjs/bullmq';
-import { NOTIFICATION_QUEUE } from './constants/constants';
+import { FireBaseClient } from './providers/firebase.provider';
 
 @Module({
     imports:[
@@ -15,6 +14,7 @@ import { NOTIFICATION_QUEUE } from './constants/constants';
     // })
     ],
     controllers:[NotificationController],
-    providers:[NotificationService, PrismaService]
+    providers:[NotificationService, PrismaService, FireBaseClient],
+    exports:[FireBaseClient]
 })
 export class NotificationModule {}

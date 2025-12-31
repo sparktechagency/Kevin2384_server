@@ -22,12 +22,15 @@ import { S3Storage } from './common/storage/s3-storage';
 import { AwsModule } from './modules/aws/aws.module';
 import { MulterConfigProvider } from './common/providres/multer.provider';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import jwtConfig from './config/jwt.config';
+import firebaseConfig from './config/firebase.config';
 
 
 
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig, awsConfig]}),
+    ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig, awsConfig, jwtConfig, firebaseConfig]}),
     // BullModule.forRoot({
     //   connection:{
     //     host:'localhost',
@@ -52,7 +55,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
           limit:20
         }
       ]
-    })
+    }),
+    DashboardModule
   ],
   
   controllers: [AppController],

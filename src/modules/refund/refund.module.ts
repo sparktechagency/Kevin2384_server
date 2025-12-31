@@ -6,8 +6,12 @@ import { AdminApprovalStrategy } from './strategies/AdminApprovalRefundRequest.s
 import { RefundController } from './refund.controller';
 import { RefundService } from './refund.service';
 import { NotificationService } from '../notification/notification.service';
+import { PaymentService } from '../payment/payment.service';
+import { StripeProvider } from '../payment/providers/stripe.provider';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
+    imports:[NotificationModule],
     providers:[
         PrismaService,
         {
@@ -20,7 +24,8 @@ import { NotificationService } from '../notification/notification.service';
         },
         RefundRequestResolver,
         RefundService,
-        NotificationService
+        NotificationService,
+        StripeProvider
     ],
     controllers:[RefundController],
     exports:[RefundRequestResolver]

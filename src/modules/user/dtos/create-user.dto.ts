@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer"
-import { IsEmail, IsIn, IsNotEmpty, IsString, MinLength } from "class-validator"
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator"
 import { UserRole } from "generated/prisma/enums"
 
 
@@ -32,4 +32,9 @@ export class CreateUserDto {
     @IsNotEmpty()
     @IsIn(["COACH", "PLAYER"])
     readonly role:UserRole
+
+    @IsString()
+    @IsOptional()
+    @IsNotEmpty()
+    sport?:string
 }

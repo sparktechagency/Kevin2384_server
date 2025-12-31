@@ -1,8 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { Session } from "generated/prisma/client";
-import { ParticipantPaymentStatus, PaymentStatus, SessionStatus } from "generated/prisma/enums";
+import { ParticipantPaymentStatus, PaymentStatus, RecurringStatus, SessionStatus } from "generated/prisma/enums";
+import { RRule } from "rrule";
 import { PrismaService } from "src/modules/prisma/prisma.service";
+import { SESSION_CONSTANTS } from "../constants";
 
 @Injectable()
 export class SessionScheduler{
@@ -54,5 +56,37 @@ export class SessionScheduler{
             total_amount:totalAmount
         }})
     }
+
+
+    // async scheduleRecurringSession(){
+    //     const recurringSessions = await this.prismaService.recurringData.findMany({include:{template:true}})
+
+    //     recurringSessions.forEach(async recurringSession => {
+
+    //         if(recurringSession.next_published && (recurringSession.status === RecurringStatus.ACTIVE)){
+                
+    //             const next7Days = new Date(new Date(Date.now() + SESSION_CONSTANTS.SESSION_CREATE_BEFORE_DAYS))
+
+    //             const dates  = RRule.fromString(recurringSession.recurrence_rule).between(new Date(Date.now()), next7Days, true, (d, len) => {
+    //                 return d > recurringSession.next_published! 
+    //             })
+                
+    //             dates.forEach(async date => {
+    //                 const template = recurringSession.template
+    //                 template.started_at = date
+    //                 template.completed_at = new Date(date.getTime() + SESSION_CONSTANTS.SESSION_COMPLETE_AFTER_DAYS)
+    //                 const location = JSON.parse(template.location as string)
+
+    //                 await this.prismaService.session.create({data:{...template, location}})
+    //             })
+
+    //             await this.prismaService.recurringData.update({where:{id:recurringSession.id}, data:{
+    //                 latest_published:new Date(Date.now()),
+    //                 next_published: next7Days <= recurringSession.ended_at ? next7Days:null
+    //             }})
+
+    //         }
+    //     })
+    // }
 
 }

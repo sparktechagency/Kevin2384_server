@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, RawBodyRequest } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException, RawBodyRequest } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { Audience, NotificationLevel, ParticipantPaymentStatus, PaymentStatus, PlayerStatus } from "generated/prisma/enums";
 import stripeConfig, { StripeConfig } from "src/config/stripe.config";
@@ -34,9 +34,16 @@ export class StripeProvider {
 
 
 async createCheckoutSession(amount:number,item:{title:string, description:string}, paymentId:string, participantId:string, sessionId:string){
+    const session = await this.prismaService.session.findUnique({where:{id:sessionId}, include:{coach:true}})
+    if(!session){
+        throw new NotFoundException("session not found")
+    }
+
+    
+
     const checkoutSession = await this.stripeCLient.checkout.sessions.create({
         mode:'payment',
-        success_url:"http://www.google.com",
+        success_url:"http://coachconnect.com/return/success",
         metadata:{
             paymentId,
             participantId,
@@ -54,7 +61,7 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
                 },
                 quantity:1
             }
-        ]
+        ],
         
     })
 
@@ -123,12 +130,31 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
                 amount:amount,
                 currency:"usd",
             })
+
+            console.log("Transfering amount..", accountId)
         }catch(err){
             console.log("Tranferring amount error!")
             throw err
         }
-      
+    }
 
+    async refund(amount:number, paymentId:string, sessionId:string, participantId:string){
+        const payment = await this.prismaService.payment.findUnique({where:{id:paymentId}})
+
+        if(!payment){
+            throw new Error("Payment not found")
+        }
+        const paymentIntent = await this.stripeCLient.paymentIntents.retrieve(payment.stripe_intent_id!)
+        
+        const refund = await this.stripeCLient.refunds.create({
+            payment_intent:paymentIntent.id,
+            amount:amount,
+            metadata:{
+                sessionId:sessionId,
+                paymentId:paymentId,
+                participantId:participantId
+            }
+        })
     }
 
     async handleWebhook(stripe_signature:string, req:RawBodyRequest<Request>){
@@ -158,9 +184,11 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
             if(session){
                     
                 const [payment, participant] = await this.prismaService.$transaction([
-                    this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded}}),
-                    this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
+                    this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded, stripe_session_id:event.data.object.id, stripe_intent_id:event.data.object.payment_intent?.toString()}}),
+                    this.prismaService.sessionParticipant.update({
+                        where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
                 ])
+                
                 this.notificationService.createNotification({
                     audience:Audience.USER,
                     userId:participant.player_id,

@@ -13,7 +13,7 @@ export class UserQueryDto extends PaginationDto{
     email_verified:boolean
 
     @IsOptional()
-    fullName:string
+    query:string
 
     @IsOptional()
     email:string

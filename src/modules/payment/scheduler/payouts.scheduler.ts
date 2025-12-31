@@ -4,18 +4,21 @@ import { Session } from "generated/prisma/client";
 import { Audience, NotificationLevel, ParticipantPaymentStatus, PayoutStatus, PlayerStatus, RefundRequestStatus, SessionStatus } from "generated/prisma/enums";
 import { NotificationService } from "src/modules/notification/notification.service";
 import { PrismaService } from "src/modules/prisma/prisma.service";
+import { StripeProvider } from "../providers/stripe.provider";
 
 @Injectable()
 export class PayoutScheduler {
 
     private readonly logger = new Logger(PayoutScheduler.name)
 
-    constructor(private readonly prismaService:PrismaService, private readonly notificationService:NotificationService){}
+    constructor(private readonly prismaService:PrismaService, private readonly notificationService:NotificationService,
+        private readonly stripeProvider:StripeProvider
+    ){}
 
     @Cron(CronExpression.EVERY_10_SECONDS)
     async payoutsWatcher(){
         this.logger.log("payout scheduler running...")
-         const sessions = await this.prismaService.session.findMany({where:{status:SessionStatus.COMPLETED}})
+         const sessions = await this.prismaService.session.findMany({where:{status:SessionStatus.COMPLETED}, include:{coach:true}})
          sessions.forEach(async session => {
             
             await this.createPayout(session)
@@ -59,6 +62,8 @@ export class PayoutScheduler {
                     session_id:session.id,
                 }})
 
+                // this.stripeProvider.transfer(payout.total_amount, )
+
                 this.notificationService.createNotification({
                     audience:Audience.USER,
                     level:NotificationLevel.INFO,
@@ -70,7 +75,6 @@ export class PayoutScheduler {
             }
         }
         
-        
     }
 
 
@@ -80,7 +84,7 @@ export class PayoutScheduler {
     }
 
     async releasePayout(){
-        
+
     }
 
 }

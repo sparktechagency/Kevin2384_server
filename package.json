@@ -44,6 +44,7 @@
     "node-deeplink": "^0.6.0",
     "nodemailer": "^7.0.10",
     "reflect-metadata": "^0.2.2",
+    "rrule": "^2.8.1",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "stripe": "^20.0.0",

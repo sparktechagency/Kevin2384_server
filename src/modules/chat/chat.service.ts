@@ -87,9 +87,11 @@ export class ChatService {
                 }
             }
         }, include:{members:true}})
+
         if(existingRoom){
             return existingRoom
         }
+
         const newRoom = await this.prismaService.chatRoom.create({
             data:{
                 members:{
@@ -100,6 +102,7 @@ export class ChatService {
                 }
             },
         include:{members:true}},)
+
         return newRoom
     }
 
@@ -158,7 +161,7 @@ export class ChatService {
                 include:{sender:true, receiver:true},
                 skip,
                 take:getAllMessageDto.limit,
-                orderBy:{createdAt:"asc"}
+                orderBy:{createdAt:"desc"}
             }),
             this.prismaService.chat.count({
                 where:{chatRoom_id:getAllMessageDto.roomId}
@@ -175,7 +178,9 @@ export class ChatService {
             const is_mine = message.sender_id === userId
             return {...message, is_mine}
         })
-        return {messages: mappedMessages, total}
+
+        const reveredMessages = mappedMessages.reverse()
+        return {messages: reveredMessages, total}
     }
 
     async sendFile(){}
@@ -183,7 +188,7 @@ export class ChatService {
     async acknowledgeMessageDelivery(messageId:string){
         const chat = await this.prismaService.chat.update({
             where:{id:messageId},
-            data:{is_delivered:true}
+            data:{is_delivered:true, is_read:true}
         })
 
         return chat

@@ -1,17 +1,21 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
 import { TokenPayload } from "../types/TokenPayload.type";
 import { Reflector } from "@nestjs/core";
 import { PUBLIC_KEY } from "src/common/decorators/public.decorator";
 import { UserService } from "src/modules/user/user.service";
+import { type ConfigType } from "@nestjs/config";
+import   jwtConfig from "src/config/jwt.config";
 
 @Injectable()
 export class JwtGuard implements CanActivate {
 
     constructor(private readonly jwtService:JwtService,
         private readonly reflector: Reflector,
-        private readonly userService:UserService
+        private readonly userService:UserService,
+        @Inject(jwtConfig.KEY)
+        private readonly jwtConfigOptions:ConfigType<typeof jwtConfig>
     ){}
 
     async canActivate(context: ExecutionContext):Promise<boolean> {
@@ -26,15 +30,18 @@ export class JwtGuard implements CanActivate {
         try{
             const token = this.extractToken(request)
     
-            const payload = await this.jwtService.verifyAsync<TokenPayload>(token, {secret:"MySecret"})
+            const payload = await this.jwtService.verifyAsync<TokenPayload>(token, {secret:this.jwtConfigOptions.jwt_secret})
 
             const user = await this.getUserData(payload.id)
-            if(!user || user.is_blocked || user.is_deleted){
+
+            if(!user || user.is_deleted){
                 throw new BadRequestException("User data does not exist")
+            }
+            if(user.is_blocked){
+                throw new BadRequestException("Sorry! your account has been blocked.Contact Support")
             }
 
             request['payload'] = payload
-
 
             return true
             

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, RawBodyRequest } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePaymentDto } from "./dtos/create-payment.dto";
-import { PaymentStatus, PaymentType, PayoutStatus } from "generated/prisma/enums";
+import { PaymentStatus, PaymentType, PayoutStatus, SessionStatus } from "generated/prisma/enums";
 import { StripeProvider } from "./providers/stripe.provider";
 import { PaginationDto } from "src/common/dtos/pagination.dto";
 
@@ -12,18 +12,21 @@ export class PaymentService {
 
     async createPayment(createPaymentDto:CreatePaymentDto){
 
-        const session = await this.prismaService.session.findUnique({where:{id:createPaymentDto.item_id}})
-        const platform_fee = 0.0
-
+        const session = await this.prismaService.session.findUnique({where:{id:createPaymentDto.item_id, status:SessionStatus.CREATED}})
+       
         if(!session){
             throw new NotFoundException("session not found")
         }
+
+        let platformFee = await this.prismaService.platformFee.findFirst()
+        const fee = platformFee? platformFee.fee : 0.0
+
         const createdPayment = await this.prismaService.payment.create({data:{
             item_id:createPaymentDto.item_id,
             buyer_id:createPaymentDto.participant_id,
             payment_type:createPaymentDto.payment_type,
-            total_amount:createPaymentDto.amount + platform_fee,
-            platform_fee:platform_fee,
+            total_amount:session.fee + fee,
+            platform_fee:fee,
             session_fee:session.fee
         }})
 
@@ -57,31 +60,19 @@ export class PaymentService {
     }
 
    async getEarningGrowth(year:number): Promise<Array<{ month: number; total: number }>>{
-
+        
         const start = new Date(year, 0, 1)
-        const end = new Date(year+1, 0, 1)
+        const end = new Date(year, 11, 30)
 
-        const pipeline = [
-            {
-                $match: {
-                    createdAt: { $gte: start, $lt: end },
-                    status: PaymentStatus.Succeeded,
-                },
-            },
-            {
-                $group: {
-                    _id: { $month: "$paymentDate" },
-                    total: { $sum: "$amount" },
-                },
-            },
-            { $sort: { _id: 1 } },
-        ]
+        const results = await this.prismaService.payment.findMany({where:{status:PaymentStatus.Succeeded, createdAt:{gte:start, lte:end}}})
+        const monthsData = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total: 0 }))
+      
+        results.forEach(result => {
+            let createdMonth = new Date(result.createdAt).getMonth()
+            monthsData[createdMonth].total+=result.total_amount
+        })
 
-        const results = await this.prismaService.payment.aggregateRaw({pipeline})
-
-        const months = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total: 0 }))
-       
-        return months
+        return monthsData
     }
 
     async getCoachPaymentStats(coachId:string){
@@ -173,6 +164,13 @@ export class PaymentService {
   
 
         return refundData
+    }
+
+    async processRefund(amount:number, paymentId:string, sessionId:string, participantId:string){
+
+        const refundResult = await this.stripeProvider.refund(amount, paymentId,sessionId, participantId)
+
+        return refundResult
     }
 
     handleWebhook(stripeSignature:string, request:RawBodyRequest<Request>){

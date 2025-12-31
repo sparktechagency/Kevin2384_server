@@ -2,13 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { SessionCancelStrategy } from "./SessionCancelStrategy.interface";
 import { PrismaService } from "src/modules/prisma/prisma.service";
 import { RefundRequestResolver } from "src/modules/refund/providers/RefundRequestResolver.provider";
-import { Audience, NotificationLevel, ParticipantPaymentStatus, PlayerStatus, SessionStatus } from "generated/prisma/enums";
+import { Audience, NotificationLevel, PlayerStatus, SessionStatus } from "generated/prisma/enums";
 import { Session, SessionParticipant } from "generated/prisma/client";
 import { NotificationService } from "src/modules/notification/notification.service";
 
 @Injectable()
-export class CoachCancelStrategy implements SessionCancelStrategy {
-    public static readonly INJECTION_KEY = "Coach_Cancel_Strategy"
+export class AdminCancelStrategy implements SessionCancelStrategy {
+    public static readonly INJECTION_KEY = "Admin_Cancel_Strategy"
 
     constructor(
         private readonly prismaService:PrismaService,
@@ -36,7 +36,7 @@ export class CoachCancelStrategy implements SessionCancelStrategy {
                         userId:participant.player_id,
                         audience:Audience.USER,
                         level:NotificationLevel.INFO,
-                        title:"Session Cancelled By Coach",
+                        title:"Session Cancelled By Admin",
                         message:`Reason: ${{reason}}`
                     })
                 }
@@ -49,7 +49,7 @@ export class CoachCancelStrategy implements SessionCancelStrategy {
                         userId:participant.player_id,
                         audience:Audience.USER,
                         level:NotificationLevel.INFO,
-                        title:"Session Cancelled By Coach",
+                        title:"Session Cancelled By Admin",
                         message:`Reason: ${{reason}}`
                     })
 

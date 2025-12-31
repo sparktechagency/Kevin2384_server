@@ -18,4 +18,7 @@ export class CoachResponseDto {
 
     @Expose()
     fullName:string
+    
+    @Expose()
+    sport:string
 }

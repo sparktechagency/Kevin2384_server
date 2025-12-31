@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "softball-american",
+  "private_key_id": "a871d17b4701a0e039cff6076bbf7ef45715ed0b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDCOrW0//Gs82Zp\nWNO/M0RVvM4xOxqK4jhBaf6en3l9ZP7yOmowm3ZSRdrGwVHH2MQtL4HWcRCJyMoX\nlGW24daGGebZFnc0R7ha3YF6rRrjI2gM25fsyiKF98kK9P434KYin3jtsQ7qrXa/\nV54eCIXTFmqOTHMfvUEHFvbqUvfaimytnQS7JkTJcIR8rCPzL10Z83GVlO/jfqmq\nCQUZubGuPC2ImE3LRAaxZndBT0G9MPlT7g7pevQiczsIvtCNtjytZLqvp+054hsj\nGDKVSRA+kr9k7uixEx9wMW4p0VZOsEd0AynDEQkwC4iqY3vbD8+jj/bYICYq51NY\nCDSSood7AgMBAAECggEAAXTS1sTLuU7cTlJPlb5uEIqC4Hs5K4afHCmnf0vI0gTg\n2H+4B7dF5gxtPVJG9hpzYuqMea3AjWS6oMsIqQKWfjKEuM0vUm5ucAsuV/VWUnlG\n49nKdzvb+GjJBbkCjJHo2crPHreJWhi4Ep7QkH8V3P651WlQIt79AgjNC/XyGWrI\ni9bTBqZ0fvidL7qxo0uEplhmDtvZHJArDVbuxJwymIdaPm3KT+jA1wo7Korb0fWH\n2IQvU2YJVUJDIu7iw+zhCTRCcAHavndK/ywAF0pSatruzTs1tmRYGQQU69X5S5xY\nUe4atEfMd79W2WhOCugmGTTt0ouvNJVIZfA0ZQ08EQKBgQDoZha1wCnvE0lBND9G\n4m8K2BlaoUcwZrMA+utu/+kvt54FotUtcYb0ZBDiqERDwjwiquYjZFVUuNlqY6/V\n4jbdBdk41pk87mf+v4BeMjodLeB1WLhmATJ8B8w6Nwr/pytJveVNCDpoTLnAnPm8\n9uZL70mg8Y9/sWkb2RHDLD83aQKBgQDV9EpdN0VMHLmswT8JP6kdgMI6WYXsSMMb\ncpZ/UAMkVUBLBRszDaTs5pBXc2qo80WVuV+GC627s/8XmhtTpOkLbIXBRB5ycjea\niCp/1wR5YXikMUyg5tyHMUnVR9mmXpBiUmRh5TDiw/Q3+4QUh/TlCvLCHgs0qWAd\nb9pzPvzvQwKBgF/Rf7mOMnv1GrX8ob5LK/dvo/x/FIf7QAC+dAW/E9jtvwSZ34Uu\nErN+8otRT1wUoJC2n86l1pzo3hOEaIIqE+7LM4XAzUuXDF+3e2jbEqTnPm2Dl/vO\nsI789BJokWtY9HsiBYHeS56nS8sDreBgeBGE5nmqPz0p26l0tWMgQixJAoGAUr7R\n688ua8tIO/nY6TjHrPNZKrvowYM6gekFL2PAc1LNNLZa2JnUSRK6jDfE7mZ3aPpy\naSMnI8rvQy+ElgrXXmWwLRitNdHak1dKKHr97fu2brnqSug+LcLwLR5GnMNBz+TR\nkdLT3z+tueD6Kf6SxepADLcV2l4PIBNcRun7ZIUCgYEA3fofI2mVONqabcJX6tNJ\nHgw8gaPPJhgINcHkvZihRn66jXjXcafJC1csxXBb3jdBnoNRjRT9vsHp9i2iWLm0\nbG2iYD6dCbkpOMazaWKJLQ4GP5uWMRpM/x1xtGt4otAgO/8cTptZDkIJexYI8bmM\nCXzT5omthqSUnMh88KaM46A=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@softball-american.iam.gserviceaccount.com",
+  "client_id": "100667329796741194462",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40softball-american.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

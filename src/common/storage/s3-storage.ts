@@ -18,7 +18,7 @@ export class S3Storage{
                 }
             }])
         }catch(err){
-            console.log("Error:COnfiguring s3 client failed!", err)
+            console.log("Error:Configuring s3 client failed!", err)
             throw err
         }
     }

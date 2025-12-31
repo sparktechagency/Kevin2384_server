@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Post, Req, Res } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { SigninDto } from "./dtos/signin.dto";
 import { RegisterUserDto } from "./dtos/register-user.dto";
@@ -10,6 +10,7 @@ import { SignInResponseDto } from "./dtos/sign-in-response.dto";
 import { Public } from "src/common/decorators/public.decorator";
 import { TokenPayload } from "./types/TokenPayload.type";
 import { UserResponseDto } from "../user/dtos/user-response.dto";
+import type { Response } from "express";
 
 @Controller({
     path:"auth"
@@ -34,9 +35,17 @@ export class AuthController {
 
     @Post("admin/signin")
     @Public()
+    @HttpCode(HttpStatus.OK)
     @ResponseMessage("admin signed in")
     async adminSignin(@Body() signinDto:SigninDto){
         const user =  await this.authService.adminSignIn(signinDto)
+
+        // response.cookie("token", user.token, {
+        //     secure:true,
+        //     httpOnly:true,
+        //     sameSite:true
+        // })
+
 
         return plainToInstance(SignInResponseDto,user, {
             excludeExtraneousValues:true
