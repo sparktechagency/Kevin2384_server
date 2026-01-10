@@ -362,7 +362,7 @@ export class UserService{
     }
 
     private async updatePassword(userId:string, newPassword:string){
-
+        
         const hashedPsssword = await this.encoder.hashPassword(newPassword, 10)
 
         const updatedUser =  await this.prismaService.user.update({where:{id:userId}, data:{password:hashedPsssword}})

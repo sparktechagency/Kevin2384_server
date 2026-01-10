@@ -26,6 +26,11 @@ export class RegisterUserDto extends CreateUserDto{
 
         @IsString()
         @IsNotEmpty()
+        @MinLength(6)
+        confirmPassword:string
+
+        @IsString()
+        @IsNotEmpty()
         @IsOptional()
         sport?:string
 

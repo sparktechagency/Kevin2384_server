@@ -65,7 +65,7 @@ export class SessionController {
     @ResponseMessage("Sessions fetched successfully")
     async getSessions( @Req() request:Request, @Query() sessionQuery:SessionQueryDto){
         const tokenPayload = request['payload'] as TokenPayload
-    
+        console.log(sessionQuery)
         const sessionsByRadius =  await this.sessionService.getSessions(tokenPayload.id, sessionQuery)
 
         return plainToInstance(SessionQueryResponseDto, sessionsByRadius, {

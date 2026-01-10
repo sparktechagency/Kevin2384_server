@@ -91,6 +91,8 @@ export class UserController {
     async changePassword(@Req() request:Request, @Body() chnagePasswprdDto:ChangePasswordDto){
         const tokenPayload = request['payload'] as TokenPayload
 
+        console.log(chnagePasswprdDto)
+
         const changePasswordResult = await this.userService.changePassword(tokenPayload.id, chnagePasswprdDto)
 
         return plainToInstance(UserResponseDto, changePasswordResult, {

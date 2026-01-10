@@ -120,12 +120,16 @@ export class AuthService {
      * @returns 
      */
 
-
      async registerUser (@Body() registerUserDto:RegisterUserDto) {
         
         const existingUser = await this.userService.findUserByEmail(registerUserDto.email)
+
         if(existingUser){
             throw new ConflictException('This eamil already registered, kindly sign in to your account!')
+        }
+
+        if(registerUserDto.password !== registerUserDto.confirmPassword){
+            throw new BadRequestException("password and confirm password does not matched")
         }
         const user =  await this.userService.addUser(registerUserDto)
         //Send verification code to user email
