@@ -19,6 +19,7 @@ export class RegisterUserDto extends CreateUserDto{
         @IsNotEmpty()
         phone:string
 
+        
         @IsString()
         @IsNotEmpty()
         @MinLength(6)

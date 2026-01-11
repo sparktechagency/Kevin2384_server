@@ -56,6 +56,8 @@ export class AuthController {
     @Public()
     @ResponseMessage("A verification mail sent to your email.")
     async registerUser(@Body() registerDto:RegisterUserDto){
+
+        console.log(registerDto)
         await this.authService.registerUser(registerDto)
     }
 
