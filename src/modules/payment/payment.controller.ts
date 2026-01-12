@@ -83,7 +83,6 @@ export class PaymentController{
     @Post('webhook')
     @Public()
     async webhook(@Headers('stripe-signature') signature: string, @Req() req: RawBodyRequest<Request>) {
-        console.log("web hook trigger....")
     
         const result = this.paymentService.handleWebhook(signature, req)
 
