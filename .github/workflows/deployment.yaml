@@ -49,6 +49,8 @@ jobs:
             MAILER_MAIL= ${{secrets.MAILER_MAIL}}
             MAILER_PASSWORD= ${{secrets.MAILER_PASSWORD}}
             MAILER_SERVICE= ${{secrets.MAILER_SERVICE}}
+            JWT_SECRET=${{secrets.JWT_SECRET}}
+            JWT_EXPIRES_IN= ${{secrets.JWT_EXPIRES_IN}}
 
             STRIPE_KEY= ${{secrets.STRIPE_KEY}}
             STRIPE_WEBHOOK= ${{secrets.STRIPE_WEBHOOK}}
