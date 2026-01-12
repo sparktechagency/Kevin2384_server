@@ -43,6 +43,8 @@ export class SessionController {
     async createSession(@Body() createSessionDto:CreateSessionDto, @Req() request:Request, @UploadedFile() banner:S3FIle){
         const payload = request['payload'] as TokenPayload
 
+
+
         console.log("Create session: ",createSessionDto)
         
         const createdSession = await this.sessionService.createSession(payload.id, createSessionDto, banner)
@@ -189,7 +191,7 @@ export class SessionController {
     @Roles(UserRole.PLAYER)
     async enrollSession(@Req() request:Request, @Body() enrollSessionDto:EnrollSessionDto){
         const tokenPayload = request['payload'] as TokenPayload
-
+        console.log(tokenPayload)
         const enrollResult = await this.sessionService.enrollSession(tokenPayload.id, enrollSessionDto)
 
         return enrollResult

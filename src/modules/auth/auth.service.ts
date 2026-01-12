@@ -131,7 +131,9 @@ export class AuthService {
         if(registerUserDto.password !== registerUserDto.confirmPassword){
             throw new BadRequestException("password and confirm password does not matched")
         }
-        const user =  await this.userService.addUser(registerUserDto)
+
+        const {confirmPassword, ...userData} = registerUserDto
+        const user =  await this.userService.addUser(userData)
         //Send verification code to user email
         this.sendEmailVerificationCode(user.fullName, user.email)
 
@@ -147,8 +149,9 @@ export class AuthService {
 
     async verifyEamil(email:string, code:number){
         const existingCode = await this.prismaService.otp.findFirst({where:{code, email, otp_status:OtpStatus.CREATED}})
+
         if(!existingCode){
-            throw new NotFoundException("otp not found!")
+            throw new NotFoundException("otp is invalid or incorrect!")
         }
 
         const currentDate = new Date(Date.now())

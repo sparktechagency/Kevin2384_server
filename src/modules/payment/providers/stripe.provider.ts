@@ -159,70 +159,79 @@ async createCheckoutSession(amount:number,item:{title:string, description:string
 
     async handleWebhook(stripe_signature:string, req:RawBodyRequest<Request>){
 
-    if(!this.stripeCOnfiguration.webhook_key){
-      throw new BadRequestException("webhook key is required")
-    }
-
-    if(!stripe_signature){
-        throw new BadRequestException("stripe signature is missing!")
-    }
-
-     const event = this.stripeCLient.webhooks.constructEvent(
-        req.rawBody!,
-        stripe_signature,
-        this.stripeCOnfiguration.webhook_key
-    );
-
-    switch(event.type){
-        
-        case "checkout.session.completed":{
-            const {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
-
-            const session = await this.prismaService.session.findUnique({where:{id:sessionId}})
+        try{
 
             
-            if(session){
-                    
-                const [payment, participant] = await this.prismaService.$transaction([
-                    this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded, stripe_session_id:event.data.object.id, stripe_intent_id:event.data.object.payment_intent?.toString()}}),
-                    this.prismaService.sessionParticipant.update({
-                        where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
-                ])
-                
-                this.notificationService.createNotification({
-                    audience:Audience.USER,
-                    userId:participant.player_id,
-                    level:NotificationLevel.INFO,
-                    message:`You enrolled ${session?.title} successfully`,
-                    title:"Session enrolled",
-                })
-
-                this.notificationService.createNotification({
-                    audience:Audience.USER,
-                    userId:session?.coach_id,
-                    level:NotificationLevel.INFO,
-                    title:"New Enrollment!",
-                    message:`A player booked your ${session?.title} session.`
-                })
+            if(!this.stripeCOnfiguration.webhook_key){
+                throw new BadRequestException("webhook key is required")
             }
-            break
+
+            if(!stripe_signature){
+                throw new BadRequestException("stripe signature is missing!")
+            }
+
+            const event = this.stripeCLient.webhooks.constructEvent(
+                req.rawBody!,
+                stripe_signature,
+                this.stripeCOnfiguration.webhook_key
+            );
+
+            switch(event.type){
+                
+                case "checkout.session.completed":{
+                    const {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
+
+                    const session = await this.prismaService.session.findUnique({where:{id:sessionId}})
+
+                    
+                    if(session){
+                            
+                        const [payment, participant] = await this.prismaService.$transaction([
+                            this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Succeeded, stripe_session_id:event.data.object.id, stripe_intent_id:event.data.object.payment_intent?.toString()}}),
+                            this.prismaService.sessionParticipant.update({
+                                where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Paid, player_status:PlayerStatus.Attending}})
+                        ])
+                        
+                        this.notificationService.createNotification({
+                            audience:Audience.USER,
+                            userId:participant.player_id,
+                            level:NotificationLevel.INFO,
+                            message:`You enrolled ${session?.title} successfully`,
+                            title:"Session enrolled",
+                        })
+
+                        this.notificationService.createNotification({
+                            audience:Audience.USER,
+                            userId:session?.coach_id,
+                            level:NotificationLevel.INFO,
+                            title:"New Enrollment!",
+                            message:`A player booked your ${session?.title} session.`
+                        })
+                    }
+                    break
+                }
+                case "payment_intent.payment_failed":{
+                    let {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
+
+                    await this.prismaService.$transaction([
+                        this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Failed}}),
+                        this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Failed, player_status:PlayerStatus.Cancelled}})
+                    ])
+
+                    break
+                }
+                default:
+
+            }
+
+
+            return event.data
+            
+        }catch(err){
+            console.log(err)
+            throw  err
         }
-        case "payment_intent.payment_failed":{
-            let {paymentId, participantId, sessionId} = event.data.object.metadata as MetaData
 
-            await this.prismaService.$transaction([
-                this.prismaService.payment.update({where:{id:paymentId}, data:{status:PaymentStatus.Failed}}),
-                this.prismaService.sessionParticipant.update({where:{id:participantId}, data:{payment_status:ParticipantPaymentStatus.Failed, player_status:PlayerStatus.Cancelled}})
-            ])
-
-            break
-        }
-        default:
-
-    }
-
-
-    return event.data
   }
 
     

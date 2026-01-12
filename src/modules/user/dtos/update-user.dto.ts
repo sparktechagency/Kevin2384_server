@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator"
+import { Transform } from "class-transformer"
+import { IsDate, IsDateString, IsNotEmpty, IsOptional, IsString } from "class-validator"
 
 export class UpdateUserDto{
     @IsString()
@@ -10,4 +11,13 @@ export class UpdateUserDto{
     @IsNotEmpty()
     @IsOptional()
     phone:string
+
+ 
+    @IsNotEmpty()
+    @IsOptional()
+    @IsDate()
+    @Transform((obj) => {
+        return new Date(obj.value)
+    })
+    dob:Date
 }

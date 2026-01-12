@@ -71,6 +71,7 @@ export class UserService{
         const updatedData:Partial<User> = {
             fullName: updateUserDto.fullName ?? user.fullName,
             phone: updateUserDto.phone ?? user.phone,
+            dob: updateUserDto.dob ?? user.dob,
             avatar: (file && file.path) ?? user.avatar
             
         }

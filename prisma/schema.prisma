@@ -30,6 +30,7 @@ model User {
   is_deleted     Boolean  @default(false)
   is_blocked     Boolean  @default(false)
   fcm_token     String?
+  dob           DateTime?
 
   participated_sessions SessionParticipant[]
   created_sessions      Session[]
