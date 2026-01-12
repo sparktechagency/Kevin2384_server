@@ -531,7 +531,6 @@ export class SessionService {
      * @param enrollSessionDto 
      * @returns 
      */
-
     async enrollSession(playerId:string, enrollSessionDto:EnrollSessionDto){
 
         const session = await this.prismaService.session.findUnique({where:{id:enrollSessionDto.sessionId}})
