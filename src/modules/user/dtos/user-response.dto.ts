@@ -31,6 +31,8 @@ export class UserResponseDto {
 
     @Expose()
     @Transform(obj => {
+        if(!obj.value)
+            return obj.value
         return new Date(obj.value).toLocaleDateString()
     })
     dob:string
