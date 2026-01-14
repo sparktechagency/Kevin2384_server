@@ -22,50 +22,61 @@ export class FireBaseClient {
 
 
     async sendPushNotification(tokens:string | string[], title:string, body:string){
-
-        if(!this.app)
-            throw new Error("Firebase client does not configured correctly")
-
-        if(!tokens || tokens.length <= 0)
-            throw new Error("FCM token is invalid")
-
-        if(!title || !body){
-            throw new Error ("Invalid title or body")
-        }
-
-        if(tokens instanceof Array){
-            getMessaging().sendEachForMulticast({
-                tokens,
-                notification:{
-                    title,
-                    body
-                },
+        try{
             
-            })
-        }else {
+            if(!this.app)
+                throw new Error("Firebase client does not configured correctly")
 
-            getMessaging().send({
-                token:tokens,
-                notification:{
-                    body,
-                    title
-                }
-            })
+            if(!tokens || tokens.length <= 0)
+                throw new Error("FCM token is invalid")
+
+            if(!title || !body){
+                throw new Error ("Invalid title or body")
+            }
+
+            if(Array.isArray(tokens)){
+                getMessaging().sendEachForMulticast({
+                    tokens,
+                    notification:{
+                        title,
+                        body
+                    },
+                })
+            }else {
+
+                getMessaging().send({
+                    token:tokens,
+                    notification:{
+                        body,
+                        title
+                    }
+                })
+            }
+        }catch(err){
+            console.log("error sned push notification ", err)
+            throw err
         }
+
        
        
     }
 
     private initializeFirebaseApp(){
-        if(!this.firebaseConfig.firebase_secrets){
-            throw new Error("Firebase initialization failed: Firebase secrets are invalid")
-        }
 
-       let app = initializeApp({credential: cert(JSON.parse(this.firebaseConfig.firebase_secrets))})
+        try{
+            if(!this.firebaseConfig.firebase_secrets){
+                throw new Error("Firebase initialization failed: Firebase secrets are invalid")
+            }
+
+            let app = initializeApp({credential: cert(JSON.parse(this.firebaseConfig.firebase_secrets))})
        
 
-       this.app = app
+            this.app = app
     
+        }
+        catch(err){
+            console.log("Failed to initialized firebased app: " ,err)
+        }
     }
 
 }

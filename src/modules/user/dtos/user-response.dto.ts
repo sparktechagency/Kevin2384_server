@@ -29,6 +29,12 @@ export class UserResponseDto {
     @Expose()
     role:string
 
+    @Expose()
+    @Transform(obj => {
+        return new Date(obj.value).toLocaleDateString()
+    })
+    dob:string
+
     @Expose({
         groups: ['admin']
     })

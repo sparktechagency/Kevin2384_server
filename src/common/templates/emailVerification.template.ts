@@ -71,20 +71,20 @@ const emailVerificationTemplate = (data:{name:string, verificationCode:number, v
             process.env.EMAIL_TEMP_IMAGE
           }" alt="Logo" class="logo-img" />
         </div>
-        <h1>Password Reset Request</h1>
+        <h1>Email Verification Code</h1>
         <p>Hello, ${data.name}</p>
         <p>
-          We have received a request to reset your password. Please use the code below to proceed with resetting your password:
+         Please use the code below to proceed with verify your email:
         </p>
         <div class="code">${data.verificationCode}</div>
         <p>
           This code will be valid for the next <strong>${
             data.verificationCodeExpire
           } minutes</strong> and can only be used once.
-          If you attempt to reset your password again, you will need a new code.
+         
         </p>
         <p>
-          If you did not request a password reset, please disregard this email or contact support.
+          If you did not request the code, please disregard this email or contact support.
         </p>
         <p>Thank you,<br>The CouchConnect Team</p>
       </div>

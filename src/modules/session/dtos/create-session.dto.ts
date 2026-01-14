@@ -104,6 +104,21 @@ export class CreateSessionDto {
     @IsEnum(DAYS, {
         each:true
     })
+    @Transform(obj => {
+        if(Array.isArray(obj.value)){
+            return obj.value
+        }
+
+        if(typeof obj.value  === 'string'){
+            let day = obj.value as string
+            let arrayOfDay:string[] = []
+            arrayOfDay.push(day.trim())
+            return arrayOfDay
+        }
+        
+        return obj.value
+        
+    })
     @IsOptional()
     days:DAYS[]
 

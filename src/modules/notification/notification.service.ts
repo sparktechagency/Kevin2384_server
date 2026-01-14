@@ -33,7 +33,7 @@ export class NotificationService {
         try{
             
             if(createdNotification.audience === Audience.USER && [NotificationLevel.INFO, NotificationLevel.CRITICAL, NotificationLevel.WARNING].includes(createdNotification.level)){
-                console.log(user)
+                
                 if(user.fcm_token){
                     this.firebaseClient.sendPushNotification(user.fcm_token, createNotificationDto.title, createNotificationDto.message)
                 }

@@ -34,7 +34,7 @@ import { AdminCancelStrategy } from './strategies/AdminCancelStrategy';
                     cb(null, `${Date.now()}-${file.originalname}`);
                 },
         }),
-        limits:{fileSize:100000}
+        limits:{fileSize:1000000}
             }),
             inject:[S3Storage]
         })

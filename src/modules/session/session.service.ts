@@ -65,7 +65,6 @@ export class SessionService {
          * use session builder to create session object
          */
 
-
         try{
 
             const user = await this.prismaService.user.findUnique({where:{id:userId}})
@@ -78,6 +77,10 @@ export class SessionService {
             }
 
             if(createSessionDto.is_recurrent){
+                
+                // if(!Array.isArray(createSessionDto.days)){
+                //     throw new BadRequestException("days must be an array of days enum")
+                // }
 
                 const recurrent_days = createSessionDto.days
                 const recurrent_ended_at = new Date(new Date(createSessionDto.end_date).setHours(23,59,59,999))
