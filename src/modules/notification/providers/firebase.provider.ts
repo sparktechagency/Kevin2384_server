@@ -68,11 +68,9 @@ export class FireBaseClient {
                 throw new Error("Firebase initialization failed: Firebase secrets are invalid")
             }
 
-            let app = initializeApp({credential: cert(JSON.parse(this.firebaseConfig.firebase_secrets))})
+            let app = initializeApp({credential: cert("src/modules/notification/providers/softball-american.json")})
        
-
             this.app = app
-    
         }
         catch(err){
             console.log("Failed to initialized firebased app: " ,err)
