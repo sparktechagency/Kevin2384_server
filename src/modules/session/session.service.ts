@@ -484,14 +484,14 @@ export class SessionService {
             throw new UnauthorizedException("Sorry!, you are not allowed to delete this session.")
         }
 
-        
+        console.log(session)
+        console.log(new Date(Date.now()))
         if(session.started_at <= new Date(Date.now())){
             throw new BadRequestException("Sorry! This session can not be cancelled")
         }
 
         //invoke coach cancelStrategy to handle session cancellation request
         await this.coachCancelStrategy.handleCancelRequest(userId,session, session.participants, cancelSessionDto.note)
-
 
     }
 
@@ -552,7 +552,7 @@ export class SessionService {
 
 
         if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
-            throw new BadRequestException("Your age does not matched with the session requirement or update your age.")
+            throw new BadRequestException("Your age does not matched with the session requirement.")
         }
 
 
@@ -613,10 +613,12 @@ export class SessionService {
         if(player && player.dob){
             const playerDOB = player.dob
             const age = this.calculateAge(playerDOB)
-
+            console.log(age)
             return age >= requiredAge
                 
         }
+
+        console.log(player)
 
         return false
     }
@@ -626,11 +628,29 @@ export class SessionService {
 
         const currentYear = currentDate.getFullYear()
 
-        const currentMonth = currentDate.getMonth()
-        const birthYear = dob.getFullYear()
-        const birthMonth = dob.getMonth()
+        const currentMonth = currentDate.getMonth()+1
+        const currentDay = currentDate.getDate()
 
-        return (currentYear - birthYear) + (birthMonth < currentMonth ? 0 : 1)
+        const birthYear = dob.getFullYear()
+        const birthMonth = dob.getMonth()+1
+        const birthDay = dob.getDate()
+
+        let confirmedAge =  (currentYear - birthYear) - 1
+
+        if(birthMonth <= currentMonth){
+            return confirmedAge + 1
+        }
+        // else if(birthMonth === currentMonth){
+        //     if(birthDay <= currentDay) 
+        //         return confirmedAge + 1
+        //     else 
+        //         return confirmedAge
+        // }
+        else {
+            return confirmedAge
+        }
+           
+
     }
 
 
