@@ -551,9 +551,9 @@ export class SessionService {
         }
 
 
-        if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
-            throw new BadRequestException("Your age does not matched with the session requirement.")
-        }
+        // if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
+        //     throw new BadRequestException("Your age does not matched with the session requirement.")
+        // }
 
 
         let platform_fee = await this.prismaService.platformFee.findFirst()
@@ -607,23 +607,20 @@ export class SessionService {
 
     }
 
-    async isPlayerAgeValidToJoin(playerId:string, requiredAge:number){
+    private async isPlayerAgeValidToJoin(playerId:string, requiredAge:number){
 
         const player = await this.prismaService.user.findUnique({where:{id:playerId}})
         if(player && player.dob){
             const playerDOB = player.dob
             const age = this.calculateAge(playerDOB)
-            console.log(age)
             return age >= requiredAge
                 
         }
 
-        console.log(player)
-
         return false
     }
 
-    calculateAge(dob:Date){
+    private calculateAge(dob:Date){
         const currentDate = new Date(Date.now())
 
         const currentYear = currentDate.getFullYear()
