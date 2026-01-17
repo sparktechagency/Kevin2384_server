@@ -551,9 +551,9 @@ export class SessionService {
         }
 
 
-        if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
-            throw new BadRequestException("Your age does not matched with the session requirement.")
-        }
+        // if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
+        //     throw new BadRequestException("Your age does not matched with the session requirement.")
+        // }
 
 
         let platform_fee = await this.prismaService.platformFee.findFirst()
