@@ -5,13 +5,21 @@ import  {GlobalHttpExceptionHandler}  from './common/exceptions/GlobalHttpExcept
 import { ResponseTransformerInterceptor } from './common/interceptors/responseTransformer.interceptor';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import fs from 'fs'
+
 
 
 async function bootstrap() {
 
+  const httpsOptions = {
+    key: fs.readFileSync('./private.key'),
+  cert: fs.readFileSync('./certificate.pem'),
+};
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:["debug", "error", "warn", "fatal","verbose", "log"],
-    rawBody:true
+    rawBody:true,
+    httpsOptions
   });
 
 
