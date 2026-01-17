@@ -551,9 +551,9 @@ export class SessionService {
         }
 
 
-        // if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
-        //     throw new BadRequestException("Your age does not matched with the session requirement.")
-        // }
+        if(!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))){
+            throw new BadRequestException("Your age does not matched with the session requirement.")
+        }
 
 
         let platform_fee = await this.prismaService.platformFee.findFirst()
@@ -587,6 +587,8 @@ export class SessionService {
                 payment_method:enrollSessionDto.paymentMethod,
                 ...(enrollSessionDto.paymentMethod === PaymentMethod.CASH ? {payment_status:ParticipantPaymentStatus.Cash, player_status:PlayerStatus.Attending}:{})
             }})
+
+        
         
             // redirect the user to payment page if payment method is online
             if(sessionParticipant.payment_method === PaymentMethod.ONLINE){
@@ -924,7 +926,7 @@ export class SessionService {
 
     async getSessionDetailsById(userId:string, sessionId:string){
 
-        const session = await this.prismaService.session.findUnique({where:{id:sessionId}, include:{coach:true, participants:{where:{player_id:userId, player_status:PlayerStatus.Attending, payment_status:ParticipantPaymentStatus.Paid}}}})
+        const session = await this.prismaService.session.findUnique({where:{id:sessionId}, include:{coach:true, participants:{where:{player_id:userId, player_status:PlayerStatus.Attending, OR:[{payment_status:ParticipantPaymentStatus.Cash}, {payment_status:ParticipantPaymentStatus.Paid}]}}}})
     
         if(!session){
             throw new NotFoundException("session not found")
