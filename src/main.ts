@@ -18,8 +18,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:["debug", "error", "warn", "fatal","verbose", "log"],
-    rawBody:true,
-    httpsOptions
+    rawBody:true
   });
 
 
