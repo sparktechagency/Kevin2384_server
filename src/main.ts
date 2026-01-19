@@ -1,6 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import {  ValidationPipe } from '@nestjs/common';
 import  {GlobalHttpExceptionHandler}  from './common/exceptions/GlobalHttpExceptionHandler';
 import { ResponseTransformerInterceptor } from './common/interceptors/responseTransformer.interceptor';
 import { NestExpressApplication } from '@nestjs/platform-express';

@@ -576,11 +576,28 @@ export class UserService{
 
         const start = new Date(year, 0, 1)
         const end = new Date(year, 11, 30)
-        const players = await this.prismaService.user.findMany({where:{role:UserRole.COACH, createdAt:{gte:start, lte:end}}})
+        const players = await this.prismaService.user.findMany({where:{role:UserRole.PLAYER, createdAt:{gte:start, lte:end}}})
 
         const monthsData = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total: 0 }))
 
         players.forEach(player => {
+            let createdMonth = new Date(player.createdAt).getMonth()
+
+            monthsData[createdMonth].total+=1
+        })
+
+        return monthsData
+    }
+
+    async getUserGrowth(year:number){
+
+        const start = new Date(year, 0, 1)
+        const end = new Date(year, 11, 30)
+        const users = await this.prismaService.user.findMany({where:{role:{not:UserRole.ADMIN},createdAt:{gte:start, lte:end}}})
+
+        const monthsData = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total: 0 }))
+
+        users.forEach(player => {
             let createdMonth = new Date(player.createdAt).getMonth()
 
             monthsData[createdMonth].total+=1

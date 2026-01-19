@@ -181,6 +181,15 @@ export class UserController {
         return results
     }
 
+    @Get("user-growth")
+    @Roles(UserRole.ADMIN)
+    @ResponseMessage("users growth fetches successfully")
+    async getUsersGrowth(@Req() request:Request, @Query("year",new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year:number){
+
+        const results = await this.userService.getUserGrowth(year)
+
+        return results
+    }
     @Get("coaches")
     @Roles(UserRole.ADMIN)
     @ResponseMessage("coaches fetched successfully")
