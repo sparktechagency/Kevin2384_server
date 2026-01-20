@@ -813,7 +813,6 @@ export class SessionService {
     async getPlayerEnrolledSessions(userId: string, getPlayerSessionDto: GetPlayerEnrolledSessionDto, pagination: PaginationDto) {
         const { skip, take } = this.getPaginationParams(pagination);
 
-
         if (getPlayerSessionDto.status === SessionStatus.COMPLETED) {
 
             const [enrolledSessions, total] = await this.prismaService.$transaction([
@@ -979,7 +978,7 @@ export class SessionService {
             const participant = await this.prismaService.sessionParticipant.findFirst({
                 where: {
                     session_id: reportSessionDto.sessionId, player_id: userId,
-                    player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid
+                    player_status: PlayerStatus.Attending
                 }
             })
 
