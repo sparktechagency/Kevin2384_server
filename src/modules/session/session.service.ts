@@ -1006,7 +1006,11 @@ export class SessionService {
                 }
             })
 
-            if ((session.fee > 0) && createdReport.need_refund) {
+            if (createdReport.need_refund && participant.payment_status === ParticipantPaymentStatus.Cash) {
+                throw new BadRequestException("Cash payment is not refundable")
+            }
+
+            if ((session.fee > 0 && participant.payment_status === ParticipantPaymentStatus.Paid) && createdReport.need_refund) {
                 await this.refundRequestResolver.resolveRefundRequest(createdReport.participant_id, session, createdReport.description)
             }
 
