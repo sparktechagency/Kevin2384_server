@@ -12,23 +12,23 @@ export class RefundRequestResolver {
     constructor(
 
         @Inject(RefundAutoAcceptedStrategy.INJECTION_KEY)
-        private readonly refundAutoAccepted:RefundStrategy,
+        private readonly refundAutoAccepted: RefundStrategy,
 
         @Inject(AdminApprovalStrategy.INJECTION_KEY)
-        private readonly adminApprovalRefundRequest:RefundStrategy
-    ){}
+        private readonly adminApprovalRefundRequest: RefundStrategy
+    ) { }
 
-    async resolveRefundRequest(participantId:string, session:Session, reason:string){
-        try{
+    async resolveRefundRequest(participantId: string, session: Session, reason: string) {
+        try {
 
-            if(session.status === SessionStatus.CANCELLED || session.status === SessionStatus.CREATED){
-            await this.refundAutoAccepted.handleRefundRequest(participantId, session, reason)
-        }
+            if (session.status === SessionStatus.CANCELLED || session.status === SessionStatus.CREATED) {
+                await this.refundAutoAccepted.handleRefundRequest(participantId, session, reason)
+            }
 
-            if(session.status === SessionStatus.ONGOING){
+            if (session.status === SessionStatus.ONGOING || session.status === SessionStatus.COMPLETED) {
                 await this.adminApprovalRefundRequest.handleRefundRequest(participantId, session, reason)
             }
-        }catch(err){
+        } catch (err) {
 
             console.log(err)
 

@@ -272,6 +272,7 @@ export class SessionService {
             })
         ]);
 
+
         const sessionWithJoinDetails = await Promise.all(sessions.map(async session => {
             const joindParticipant = await this.prismaService.sessionParticipant.count({
                 where: {
@@ -497,7 +498,7 @@ export class SessionService {
 
         const session = await this.prismaService.session.findFirst({
             where: { id: cancelSessionDto.sessionId },
-            include: { participants: { where: { player_id: userId, player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } }
+            include: { participants: { where: { player_id: userId, player_status: PlayerStatus.Attending } } }
         })
 
         if (!session) {
