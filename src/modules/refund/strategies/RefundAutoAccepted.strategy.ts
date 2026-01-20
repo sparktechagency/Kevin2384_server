@@ -47,22 +47,22 @@ export class RefundAutoAcceptedStrategy implements RefundStrategy {
                 }
             });
 
-            const createdRefundPayment = await prisma.payment.create({
-                data: {
-                    payment_type: PaymentType.Refund,
-                    buyer_id: participantId,
-                    total_amount: payment.total_amount,
-                    platform_fee: payment.platform_fee,
-                    session_fee: payment.session_fee,
-                    item_id: session.id
-                }
-            });
+            // const createdRefundPayment = await prisma.payment.create({
+            //     data: {
+            //         payment_type: PaymentType.Refund,
+            //         buyer_id: participantId,
+            //         total_amount: payment.total_amount,
+            //         platform_fee: payment.platform_fee,
+            //         session_fee: payment.session_fee,
+            //         item_id: session.id
+            //     }
+            // });
 
             await this.stripeProvider.refund(
-                createdRefundPayment.session_fee,
-                createdRefundPayment.id,
-                createdRefundPayment.item_id!,
-                createdRefundPayment.buyer_id!
+                payment.session_fee,
+                payment.id,
+                payment.item_id!,
+                payment.buyer_id!
             );
 
             const updatedParticipant = await prisma.sessionParticipant.update({

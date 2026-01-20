@@ -5,11 +5,10 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
-  moduleFormat = "cjs"
+  provider      = "prisma-client"
+  output        = "../generated/prisma"
+  moduleFormat  = "cjs"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
-  
 }
 
 datasource db {
@@ -18,19 +17,19 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
   avatar         String?
-  email          String   @unique
+  email          String    @unique
   fullName       String
   phone          String
   password       String
   role           UserRole
   sport          String?
-  email_verified Boolean  @default(false)
-  is_deleted     Boolean  @default(false)
-  is_blocked     Boolean  @default(false)
-  fcm_token     String?
-  dob           DateTime?
+  email_verified Boolean   @default(false)
+  is_deleted     Boolean   @default(false)
+  is_blocked     Boolean   @default(false)
+  fcm_token      String?
+  dob            DateTime?
 
   participated_sessions SessionParticipant[]
   created_sessions      Session[]
@@ -42,7 +41,7 @@ model User {
   received_chats Chat[]         @relation(name: "received_chats")
   subscriptions  Subscription[]
   notifications  Notification[]
-  payouts       DuePayouts[]
+  payouts        DuePayouts[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -51,14 +50,13 @@ model User {
 }
 
 model PlatformFee {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  fee  Float  @default(0.0)
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  fee Float  @default(0.0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("platform_fee")
-
 }
 
 model Subscription {
@@ -78,9 +76,9 @@ model Subscription {
 }
 
 model Session {
-  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String               @id @default(auto()) @map("_id") @db.ObjectId
   banner              String
-  coach_id            String        @db.ObjectId
+  coach_id            String               @db.ObjectId
   title               String
   location            Json
   description         String
@@ -90,20 +88,19 @@ model Session {
   started_at          DateTime
   completed_at        DateTime
   report_till         DateTime?
-  report_valid        Boolean @default(false)
+  report_valid        Boolean              @default(false)
   max_participants    Int
   fee                 Float
-  status              SessionStatus @default(CREATED)
+  status              SessionStatus        @default(CREATED)
   objectives          String[]
   equipments          String[]
-  type                SessionType? 
-  coach           User                 @relation(references: [id], fields: [coach_id], onDelete: Cascade)
-  participants    SessionParticipant[]
-  payments        Payment[]
-  refund_requests RefundRequest[]
-  payout          DuePayouts?
-  reports         Report[]
-
+  type                SessionType?
+  coach               User                 @relation(references: [id], fields: [coach_id], onDelete: Cascade)
+  participants        SessionParticipant[]
+  payments            Payment[]
+  refund_requests     RefundRequest[]
+  payout              DuePayouts?
+  reports             Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -166,7 +163,7 @@ model SessionParticipant {
   player         User           @relation(references: [id], fields: [player_id], onDelete: Cascade)
   refund_request RefundRequest?
   payments       Payment[]
-  reports         Report[]
+  reports        Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -174,16 +171,15 @@ model SessionParticipant {
   @@map("session_participants")
 }
 
-
 model Payment {
   id           String        @id @default(auto()) @map("_id") @db.ObjectId
   item_id      String?       @db.ObjectId
   buyer_id     String?       @db.ObjectId
   status       PaymentStatus @default(Pending)
   payment_type PaymentType
-  platform_fee    Float
-  session_fee     Float
-  total_amount      Float
+  platform_fee Float
+  session_fee  Float
+  total_amount Float
 
   stripe_session_id  String?
   stripe_intent_id   String?
@@ -201,18 +197,18 @@ model Payment {
 }
 
 model RefundRequest {
-  id             String              @id @default(auto()) @map("_id") @db.ObjectId
-  participant_id String              @unique @db.ObjectId
-  session_id     String              @db.ObjectId
-  payment_id     String              @db.ObjectId @unique
-  status         RefundRequestStatus @default(Pending)
-  refund_request_type     RefundRequestType
-  accepted_by    String?              @db.ObjectId
-  rejection_note String?
-  refunded_amount  Float
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  participant_id      String              @unique @db.ObjectId
+  session_id          String              @db.ObjectId
+  payment_id          String              @unique @db.ObjectId
+  status              RefundRequestStatus @default(Pending)
+  refund_request_type RefundRequestType
+  accepted_by         String?             @db.ObjectId
+  rejection_note      String?
+  refunded_amount     Float
 
-  reason         String
-  
+  reason String
+
   participant SessionParticipant @relation(references: [id], fields: [participant_id])
   session     Session            @relation(references: [id], fields: [session_id])
   payment     Payment            @relation(references: [id], fields: [payment_id])
@@ -224,23 +220,22 @@ model RefundRequest {
 }
 
 model Report {
-  id      String   @id  @default(auto()) @map("_id")  @db.ObjectId
-  session_id    String @db.ObjectId
-  participant_id  String  @db.ObjectId
-  description  String
-  need_refund   Boolean   @default(false)
-  status        ReportStatus  @default(Pending)
-  replied_by    String?   @db.ObjectId
-  reply         String? 
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  session_id     String       @db.ObjectId
+  participant_id String       @db.ObjectId
+  description    String
+  need_refund    Boolean      @default(false)
+  status         ReportStatus @default(Pending)
+  replied_by     String?      @db.ObjectId
+  reply          String?
 
-  session  Session  @relation(references: [id], fields: [session_id])
-  participant   SessionParticipant @relation(references: [id], fields: [participant_id])
+  session     Session            @relation(references: [id], fields: [session_id])
+  participant SessionParticipant @relation(references: [id], fields: [participant_id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("reports")
-
 }
 
 model SessionCancelRequest {
@@ -335,39 +330,34 @@ model Notification {
   @@map("notifications")
 }
 
-
 model DuePayouts {
-  id        String   @id  @default(auto())  @map("_id")  @db.ObjectId
-  session_id  String  @db.ObjectId  @unique
-  coach_id    String  @db.ObjectId
-  total_amount Float
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  session_id    String @unique @db.ObjectId
+  coach_id      String @db.ObjectId
+  total_amount  Float
   refund_amount Float  @default(0.0)
 
-
-  status    PayoutStatus  @default(Pending)
-  session   Session  @relation(references: [id], fields: [session_id])
-  coach     User   @relation(references: [id], fields: [coach_id])
+  status  PayoutStatus @default(Pending)
+  session Session      @relation(references: [id], fields: [session_id])
+  coach   User         @relation(references: [id], fields: [coach_id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("due_payouts")
-
 }
 
 model SitePolicy {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  id    String  @id  @default(auto())  @map("_id")  @db.ObjectId
+  type PolicyType
 
-  type   PolicyType
+  content String
 
-  content   String
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("site_policy")
-
 }
 
 enum ReportStatus {
@@ -385,11 +375,11 @@ enum RefundRequestType {
   AutoAccepted
 }
 
-
 enum SessionType {
   Free
   Paid
 }
+
 enum PolicyType {
   PrivacyPolicy
   Terms
@@ -413,6 +403,7 @@ enum PaymentStatus {
   Succeeded
   Cancelled
   Failed
+  Refunded
 }
 
 enum NotificationLevel {
