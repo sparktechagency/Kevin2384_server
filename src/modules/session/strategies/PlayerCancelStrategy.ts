@@ -16,6 +16,7 @@ export class PlayerCancelStrategy implements SessionCancelStrategy {
     ) { }
 
     async handleCancelRequest(userId: string, session: Session, participant: SessionParticipant, reason: string): Promise<void> {
+        // First, update participant status in transaction
         await this.prismaService.$transaction(async prisma => {
             if (session.fee <= 0) {
                 // Free session - just cancel participant
@@ -24,19 +25,26 @@ export class PlayerCancelStrategy implements SessionCancelStrategy {
                     data: { player_status: PlayerStatus.Cancelled }
                 });
             } else {
-                // Paid session - cancel participant and process refund if needed
+                // Paid session - cancel participant
                 if (session.status === SessionStatus.CREATED) {
                     await prisma.sessionParticipant.update({
                         where: { id: participant.id },
                         data: { player_status: PlayerStatus.Cancelled }
                     });
                 }
-
-                if (participant.payment_method === PaymentMethod.ONLINE && participant.payment_status === ParticipantPaymentStatus.Paid) {
-                    await this.refundRequestResolver.resolveRefundRequest(participant.id, session, reason);
-                }
             }
         });
+
+        // Process refund OUTSIDE transaction to avoid nested transaction deadlock
+        if (session.fee > 0 && participant.payment_method === PaymentMethod.ONLINE && participant.payment_status === ParticipantPaymentStatus.Paid) {
+            try {
+                await this.refundRequestResolver.resolveRefundRequest(participant.id, session, reason);
+            } catch (err) {
+                console.log("Failed to process refund request:", err);
+                // Consider whether to throw or handle gracefully
+                throw err;
+            }
+        }
 
         // Send notification outside transaction
         try {

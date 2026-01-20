@@ -17,32 +17,33 @@ export class AdminCancelStrategy implements SessionCancelStrategy {
     ) { }
 
     async handleCancelRequest(userId: string, session: Session, participants: SessionParticipant[], reason: string): Promise<void> {
+        // First, update session and participants in transaction
         await this.prismaService.$transaction(async prisma => {
             // If session cancelled by admin, session will be cancelled and process refunds for all the participants
             await prisma.session.update({ where: { id: session.id }, data: { status: SessionStatus.CANCELLED } });
 
-            if (session.fee <= 0) {
-                // Free session - just cancel participants
-                for (const participant of participants) {
-                    await prisma.sessionParticipant.update({
-                        where: { id: participant.id },
-                        data: { player_status: PlayerStatus.Cancelled }
-                    });
-                }
-            } else {
-                // Paid session - cancel participants and process refunds
-                for (const participant of participants) {
-                    await prisma.sessionParticipant.update({
-                        where: { id: participant.id },
-                        data: { player_status: PlayerStatus.Cancelled }
-                    });
+            // Cancel all participants regardless of payment status
+            for (const participant of participants) {
+                await prisma.sessionParticipant.update({
+                    where: { id: participant.id },
+                    data: { player_status: PlayerStatus.Cancelled }
+                });
+            }
+        });
 
-                    if (participant.payment_method === PaymentMethod.ONLINE && participant.payment_status === ParticipantPaymentStatus.Paid) {
+        // Process refunds OUTSIDE transaction to avoid nested transaction deadlock
+        if (session.fee > 0) {
+            for (const participant of participants) {
+                if (participant.payment_method === PaymentMethod.ONLINE && participant.payment_status === ParticipantPaymentStatus.Paid) {
+                    try {
                         await this.refundRequestResolver.resolveRefundRequest(participant.id, session, reason);
+                    } catch (err) {
+                        console.log("Failed to process refund for participant:", participant.id, err);
+                        // Continue processing other refunds even if one fails
                     }
                 }
             }
-        });
+        }
 
         // Send notifications outside transaction
         for (const participant of participants) {
