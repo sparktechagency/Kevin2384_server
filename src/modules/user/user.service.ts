@@ -169,6 +169,8 @@ export class UserService {
 
         const resolvedUsers = await Promise.all(mappedUsers)
 
+        console.log(resolvedUsers)
+
         return { users: resolvedUsers, page: query.page, limit: query.limit, total, pages: Math.ceil(total / query.limit) }
 
     }

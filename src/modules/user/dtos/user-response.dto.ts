@@ -3,70 +3,75 @@ import { Expose, Transform } from "class-transformer";
 export class UserResponseDto {
 
     @Expose()
-    id:string
+    id: string
 
     @Expose()
     @Transform(obj => {
-            
-        if(obj.value){
+
+        if (obj.value) {
             let value = obj.value as string
-            value =  value.replaceAll("\\", "\/")
-                return `${value}`
+            value = value.replaceAll("\\", "\/")
+            return `${value}`
         }
     })
-    
-    avatar:string
+
+    avatar: string
 
     @Expose()
-    fullName:string
+    fullName: string
 
     @Expose()
-    email:string
+    email: string
 
     @Expose()
-    phone:string
+    phone: string
 
     @Expose()
-    role:string
+    role: string
 
     @Expose()
     @Transform(obj => {
-        if(!obj.value)
+        if (!obj.value)
             return obj.value
         return new Date(obj.value).toLocaleDateString()
     })
-    dob:string
+    dob: string
 
     @Expose({
         groups: ['admin']
     })
-    email_verified:boolean
+    email_verified: boolean
 
     @Expose({
         groups: ['admin']
     })
-    is_deleted:boolean
-    
-    @Expose({
-        groups: ['admin']
-    })
-    is_blocked:boolean
+    is_deleted: boolean
 
     @Expose({
         groups: ['admin']
     })
-    subscription_end_at:Date    
+    is_blocked: boolean
 
     @Expose({
         groups: ['admin']
     })
-    is_subscription_active:boolean
+    subscription_end_at: Date
 
     @Expose({
         groups: ['admin']
     })
-    total_created_sessions:number
+    is_subscription_active: boolean
 
-   
+    @Expose({
+        groups: ['admin']
+    })
+    total_created_sessions: number
+
+    @Expose({
+        groups: ['admin']
+    })
+    total_cancelled_sessions: number
+
+
 
 }
