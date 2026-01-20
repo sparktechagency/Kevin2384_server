@@ -1007,7 +1007,6 @@ export class SessionService {
                 }
             })
 
-
             if ((session.fee > 0) && createdReport.need_refund) {
                 await this.refundRequestResolver.resolveRefundRequest(createdReport.participant_id, session, createdReport.description)
             }

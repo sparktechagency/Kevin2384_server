@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { RefundStrategy } from "./RefundStrategy.interface";
 import { PrismaService } from "src/modules/prisma/prisma.service";
 import { Audience, NotificationLevel, PaymentStatus, RefundRequestStatus, RefundRequestType } from "generated/prisma/enums";
@@ -21,6 +21,14 @@ export class AdminApprovalStrategy implements RefundStrategy {
 
         if (!payment) {
             throw new Error("Payment not found for this session");
+        }
+
+        const existingRefundRequest = await this.prismaService.refundRequest.findFirst({
+            where: { participant_id: participantId, session_id: session.id }
+        });
+
+        if (existingRefundRequest) {
+            throw new BadRequestException("Refund request already submitted for this session");
         }
 
         // Create a refund request for admin approval
