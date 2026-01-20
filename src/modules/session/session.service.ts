@@ -27,6 +27,9 @@ import { SESSION_CONSTANTS } from "./constants";
 import { WarnCoachDto } from "./dtos/coach-warn.dto";
 import { AdminCancelStrategy } from "./strategies/AdminCancelStrategy";
 
+// Constants
+const MILES_TO_METERS = 1609.34;
+const UPCOMING_SESSIONS_WINDOW_DAYS = 3;
 
 @Injectable()
 export class SessionService {
@@ -52,6 +55,17 @@ export class SessionService {
     ) { }
 
     /**
+     * Helper method to calculate pagination parameters
+     * @param pagination PaginationDto
+     * @returns Object with skip and take values
+     */
+    private getPaginationParams(pagination: PaginationDto) {
+        const skip = (pagination.page - 1) * pagination.limit;
+        const take = pagination.limit;
+        return { skip, take };
+    }
+
+    /**
      * a coach can create session
      * @param userId 
      * @param createSessionDto 
@@ -59,94 +73,90 @@ export class SessionService {
      * @returns session object
      */
     async createSession(userId: string, createSessionDto: CreateSessionDto, file?: S3FIle) {
-
-
-        /**
-         * use session builder to create session object
-         */
-
         try {
-
-            const user = await this.prismaService.user.findUnique({ where: { id: userId } })
-            if (!user) {
-                throw new NotFoundException("user not found")
-            }
-
-            if (user.is_blocked) {
-                throw new UnauthorizedException("Sorry, You are not allowed to create session.")
-            }
+            const user = await this.validateUserCanCreateSession(userId);
 
             if (createSessionDto.is_recurrent) {
-
-                // if(!Array.isArray(createSessionDto.days)){
-                //     throw new BadRequestException("days must be an array of days enum")
-                // }
-
-                const recurrent_days = createSessionDto.days
-                const recurrent_ended_at = new Date(new Date(createSessionDto.end_date).setHours(23, 59, 59, 999))
-
-                const session_template = this.buildSessionInstance(userId, createSessionDto, file)
-
-                const formattedDays = recurrent_days.map((day: DAYS) => DAYS[day]) as ByWeekday[]
-
-                const next7Days = new Date(new Date(Date.now() + SESSION_CONSTANTS.SESSION_CREATE_BEFORE_DAYS).setHours(23, 59, 59, 999))
-
-                const rrule = new RRule({
-                    freq: Frequency.WEEKLY,
-                    byweekday: formattedDays,
-                    dtstart: new Date(session_template.started_at),
-                    until: recurrent_ended_at
-                })
-
-                const dates = rrule.all()
-
-                await this.prismaService.$transaction(async prisma => {
-
-                    // const createdTemplate = await prisma.sessionTemplate.create({data:session_template})
-
-                    for (const date of dates) {
-                        await prisma.session.create({
-                            data: { ...session_template, started_at: date, completed_at: new Date(date.getTime() + SESSION_CONSTANTS.SESSION_COMPLETE_AFTER_DAYS) }
-                        })
-                    }
-
-                    // await prisma.recurringData.create({
-                    //     data:{
-                    //         ended_at:recurrent_ended_at,
-                    //         recurrence_rule:rrule.toString(),
-                    //         latest_published:new Date(Date.now()),
-                    //         next_published:next7Days < recurrent_ended_at? next7Days:null,
-                    //         started_at:session_template.started_at,
-                    //         template_id:createdTemplate.id
-                    //     }
-                    // })
-
-                })
-
+                return await this.createRecurrentSessions(userId, createSessionDto, file);
             } else {
-                const session = this.buildSessionInstance(userId, createSessionDto, file)
-
-                const createdSessions = await this.prismaService.session.create({ data: session })
-
-                //create a notification
-
-                this.sessionNotifier.sendNotification(
-                    userId,
-                    Audience.USER,
-                    NotificationLevel.INFO,
-                    "Your sesssion live now!",
-                    `Session titled ${createdSessions.title} has been created`,
-                )
-
-                return createdSessions
+                return await this.createSingleSession(userId, createSessionDto, file);
             }
-
         } catch (err: any) {
-            console.log(err)
-            throw new BadRequestException(`Session Creation Failed: ${err.message}`)
-
+            console.log(err);
+            throw new BadRequestException(`Session Creation Failed: ${err.message}`);
         }
+    }
 
+    /**
+     * Validates if user can create a session
+     * @param userId 
+     * @returns User object if valid
+     */
+    private async validateUserCanCreateSession(userId: string) {
+        const user = await this.prismaService.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException("user not found");
+        }
+        if (user.is_blocked) {
+            throw new UnauthorizedException("Sorry, You are not allowed to create session.");
+        }
+        return user;
+    }
+
+    /**
+     * Creates recurrent sessions based on the schedule
+     * @param userId 
+     * @param createSessionDto 
+     * @param file 
+     */
+    private async createRecurrentSessions(userId: string, createSessionDto: CreateSessionDto, file?: S3FIle) {
+        const recurrent_days = createSessionDto.days;
+        const recurrent_ended_at = new Date(new Date(createSessionDto.end_date).setHours(23, 59, 59, 999));
+        const session_template = this.buildSessionInstance(userId, createSessionDto, file);
+        const formattedDays = recurrent_days.map((day: DAYS) => DAYS[day]) as ByWeekday[];
+
+        const rrule = new RRule({
+            freq: Frequency.WEEKLY,
+            byweekday: formattedDays,
+            dtstart: new Date(session_template.started_at),
+            until: recurrent_ended_at
+        });
+
+        const dates = rrule.all();
+
+        await this.prismaService.$transaction(async prisma => {
+            for (const date of dates) {
+                await prisma.session.create({
+                    data: {
+                        ...session_template,
+                        started_at: date,
+                        completed_at: new Date(date.getTime() + SESSION_CONSTANTS.SESSION_COMPLETE_AFTER_DAYS)
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Creates a single session
+     * @param userId 
+     * @param createSessionDto 
+     * @param file 
+     * @returns Created session
+     */
+    private async createSingleSession(userId: string, createSessionDto: CreateSessionDto, file?: S3FIle) {
+        const session = this.buildSessionInstance(userId, createSessionDto, file);
+        const createdSession = await this.prismaService.session.create({ data: session });
+
+        this.sessionNotifier.sendNotification(
+            userId,
+            Audience.USER,
+            NotificationLevel.INFO,
+            "Your sesssion live now!",
+            `Session titled ${createdSession.title} has been created`,
+        );
+
+        return createdSession;
     }
 
     private buildSessionInstance(userId: string, createSessionDto: CreateSessionDto, file?: S3FIle) {
@@ -182,9 +192,7 @@ export class SessionService {
      * @returns 
      */
     async getSessions(userId: string, sessionQuery: SessionQueryDto) {
-
-        const skip = (sessionQuery.page - 1) * sessionQuery.limit
-
+        const { skip } = this.getPaginationParams(sessionQuery);
 
         const [sessions] = await this.prismaService.$transaction(
             [this.prismaService.session.findMany({
@@ -196,34 +204,26 @@ export class SessionService {
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } } }
             })])
 
-
         const filteredSessions = sessions.filter(session => {
-            const sessionLocation = session.location
+            const sessionLocation = session.location;
             if (sessionLocation) {
                 const distance = this.getSessionDistance(
                     { latitude: sessionQuery.location[0], longitude: sessionQuery.location[1] },
-                    { latitude: sessionLocation["coordinates"][0], longitude: sessionLocation["coordinates"][1] })
+                    { latitude: sessionLocation["coordinates"][0], longitude: sessionLocation["coordinates"][1] });
 
-                const radiusInMeter = sessionQuery.radius * 1609.34
-
-                return distance <= radiusInMeter
+                const radiusInMeter = sessionQuery.radius * MILES_TO_METERS;
+                return distance <= radiusInMeter;
             }
+            return false;
+        });
 
-            return false
-
-        })
-
-        const slicedSessions = filteredSessions.slice(skip, skip + sessionQuery.limit)
-
+        const slicedSessions = filteredSessions.slice(skip, skip + sessionQuery.limit);
 
         const mappedSessions = slicedSessions.map(session => {
+            return { ...session, left: session.max_participants - session._count.participants };
+        });
 
-            return { ...session, left: session.max_participants - session._count.participants }
-        })
-
-
-        return { sessions: mappedSessions, total: filteredSessions.length }
-
+        return { sessions: mappedSessions, total: filteredSessions.length };
     }
 
     private getSessionDistance(
@@ -254,19 +254,15 @@ export class SessionService {
      */
 
     async getCoachUpcomingSessions(coachId: string, pagination: PaginationDto) {
-
-        // window for upcoming sessions
-        const upcomingWindow = this.upcomingSessionWindow(3)
-
-        const skip = (pagination.page - 1) * pagination.limit
-
+        const upcomingWindow = this.upcomingSessionWindow(UPCOMING_SESSIONS_WINDOW_DAYS);
+        const { skip, take } = this.getPaginationParams(pagination);
 
         const [sessions, total] = await this.prismaService.$transaction([
             this.prismaService.session.findMany({
                 where: { coach_id: coachId, started_at: upcomingWindow, status: SessionStatus.CREATED },
                 orderBy: { started_at: "asc" },
                 skip,
-                take: pagination.limit,
+                take,
                 include: {
                     _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } }
                 }
@@ -274,21 +270,18 @@ export class SessionService {
             this.prismaService.session.count({
                 where: { coach_id: coachId, started_at: upcomingWindow, status: SessionStatus.CREATED }
             })
-        ])
+        ]);
 
         const sessionWithJoinDetails = await Promise.all(sessions.map(async session => {
-
             const joindParticipant = await this.prismaService.sessionParticipant.count({
                 where: {
                     session_id: session.id, player_status: PlayerStatus.Attending
                 }
-            })
+            });
+            return { ...session, left: session.max_participants - joindParticipant };
+        }));
 
-            return { ...session, left: session.max_participants - joindParticipant }
-        }))
-
-        return { sessions: sessionWithJoinDetails, total }
-
+        return { sessions: sessionWithJoinDetails, total };
     }
 
 
@@ -316,21 +309,20 @@ export class SessionService {
      * @returns 
      */
     async getAvailableSessions(coachId: string, pagination: PaginationDto) {
-        const skip = (pagination.page - 1) * pagination.limit
+        const { skip, take } = this.getPaginationParams(pagination);
 
         const [sessions, total] = await this.prismaService.$transaction([
             this.prismaService.session.findMany({
                 where: { coach_id: coachId, participants: { none: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } }, status: SessionStatus.CREATED },
                 skip,
-                take: pagination.limit
+                take
             }),
             this.prismaService.session.count({
                 where: { coach_id: coachId, participants: { none: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } }, status: SessionStatus.CREATED }
             })
-        ])
+        ]);
 
-
-        return { sessions, total }
+        return { sessions, total };
     }
 
 
@@ -343,32 +335,26 @@ export class SessionService {
      * @returns 
      */
     async getActiveSessions(coachId: string, pagination: PaginationDto) {
-
-        const skip = (pagination.page - 1) * pagination.limit
+        const { skip, take } = this.getPaginationParams(pagination);
 
         const [sessions, total] = await this.prismaService.$transaction([
-
             this.prismaService.session.findMany({
                 where: { coach_id: coachId, participants: { some: { player_status: PlayerStatus.Attending } }, status: SessionStatus.CREATED },
                 skip,
-                take: pagination.limit,
+                take,
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } } }
             }),
             this.prismaService.session.count({
                 where: { coach_id: coachId, participants: { some: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } }, status: SessionStatus.CREATED }
             })
-        ])
-
+        ]);
 
         const mappedActiveSession = sessions.map(session => {
-            const { _count, ...sessionDetails } = session
-            return { ...sessionDetails, joined: _count.participants }
-        })
+            const { _count, ...sessionDetails } = session;
+            return { ...sessionDetails, joined: _count.participants };
+        });
 
-
-
-        return { sessions: mappedActiveSession, total }
-
+        return { sessions: mappedActiveSession, total };
     }
 
 
@@ -542,51 +528,51 @@ export class SessionService {
      * @returns 
      */
     async enrollSession(playerId: string, enrollSessionDto: EnrollSessionDto) {
-
-        const session = await this.prismaService.session.findUnique({ where: { id: enrollSessionDto.sessionId } })
+        const session = await this.prismaService.session.findUnique({ where: { id: enrollSessionDto.sessionId } });
 
         if (!session) {
-            throw new NotFoundException("session not found!")
+            throw new NotFoundException("session not found!");
         }
 
-        if (!(await this.isSessionValidToJoin(playerId, enrollSessionDto.sessionId))) {
-            throw new BadRequestException("session is not available to join")
-        }
+        await this.validateEnrollment(playerId, enrollSessionDto.sessionId, session.participant_min_age);
 
-        if (await this.isPlayerAlreadyEnrolled(playerId, enrollSessionDto.sessionId)) {
-            throw new BadRequestException("you are already enrolled in this session")
-        }
-
-
-        if (!(await this.isPlayerAgeValidToJoin(playerId, session.participant_min_age))) {
-            throw new BadRequestException("Your age does not matched with the session requirement.")
-        }
-
-
-        let platform_fee = await this.prismaService.platformFee.findFirst()
+        const platform_fee = await this.prismaService.platformFee.findFirst();
 
         if (session.fee <= 0 && (platform_fee && platform_fee.fee <= 0)) {
-            const enrolledPalyer = await this.enrollFreeSession(playerId, enrollSessionDto)
-
-            this.notificationService.createNotification({
-                audience: Audience.USER,
-                userId: session.coach_id,
-                title: "New Enrollment",
-                message: `New player enrolled your session ${session.title}`,
-                level: NotificationLevel.INFO
-            })
-
-            this.notificationService.createNotification({
-                audience: Audience.USER,
-                userId: playerId,
-                title: "Enrollment successfull",
-                message: `You enrolled new session ${session.title}`,
-                level: NotificationLevel.INFO
-            })
-
-            return enrolledPalyer
+            return await this.enrollFreeSession(playerId, enrollSessionDto, session);
         }
 
+        return await this.enrollPaidSession(playerId, enrollSessionDto, session);
+    }
+
+    /**
+     * Validates if a player can enroll in a session
+     * @param playerId 
+     * @param sessionId 
+     * @param minAge 
+     */
+    private async validateEnrollment(playerId: string, sessionId: string, minAge: number) {
+        if (!(await this.isSessionValidToJoin(playerId, sessionId))) {
+            throw new BadRequestException("session is not available to join");
+        }
+
+        if (await this.isPlayerAlreadyEnrolled(playerId, sessionId)) {
+            throw new BadRequestException("you are already enrolled in this session");
+        }
+
+        if (!(await this.isPlayerAgeValidToJoin(playerId, minAge))) {
+            throw new BadRequestException("Your age does not matched with the session requirement.");
+        }
+    }
+
+    /**
+     * Enrolls a player in a paid session
+     * @param playerId 
+     * @param enrollSessionDto 
+     * @param session 
+     * @returns 
+     */
+    private async enrollPaidSession(playerId: string, enrollSessionDto: EnrollSessionDto, session: any) {
         const result = await this.prismaService.$transaction(async prisma => {
             const sessionParticipant = await prisma.sessionParticipant.create({
                 data: {
@@ -595,27 +581,61 @@ export class SessionService {
                     payment_method: enrollSessionDto.paymentMethod,
                     ...(enrollSessionDto.paymentMethod === PaymentMethod.CASH ? { payment_status: ParticipantPaymentStatus.Cash, player_status: PlayerStatus.Attending } : {})
                 }
-            })
+            });
 
-
-
-            // redirect the user to payment page if payment method is online
             if (sessionParticipant.payment_method === PaymentMethod.ONLINE) {
-
                 const paymentLink = await this.paymentService.createPayment({
                     item_id: sessionParticipant.session_id,
                     participant_id: sessionParticipant.id,
                     payment_type: PaymentType.Enrollment
-                })
-
-                return paymentLink
+                });
+                return paymentLink;
             }
 
-            return sessionParticipant
-        })
+            return sessionParticipant;
+        });
 
-        return result
+        return result;
+    }
 
+    /**
+     * Enrolls a player in a free session
+     * @param playerId 
+     * @param enrollSessionDto 
+     * @param session 
+     * @returns 
+     */
+    private async enrollFreeSession(playerId: string, enrollSessionDto: EnrollSessionDto, session: any) {
+        const participant = await this.prismaService.$transaction(async prisma => {
+            const sessionParticipant = await prisma.sessionParticipant.create({
+                data: {
+                    player_id: playerId,
+                    payment_method: enrollSessionDto.paymentMethod,
+                    session_id: enrollSessionDto.sessionId,
+                    player_status: PlayerStatus.Attending,
+                    payment_status: ParticipantPaymentStatus.Paid
+                }
+            });
+            return sessionParticipant;
+        });
+
+        this.notificationService.createNotification({
+            audience: Audience.USER,
+            userId: session.coach_id,
+            title: "New Enrollment",
+            message: `New player enrolled your session ${session.title}`,
+            level: NotificationLevel.INFO
+        });
+
+        this.notificationService.createNotification({
+            audience: Audience.USER,
+            userId: playerId,
+            title: "Enrollment successfull",
+            message: `You enrolled new session ${session.title}`,
+            level: NotificationLevel.INFO
+        });
+
+        return participant;
     }
 
     private async isPlayerAgeValidToJoin(playerId: string, requiredAge: number) {
@@ -632,60 +652,22 @@ export class SessionService {
     }
 
     private calculateAge(dob: Date) {
-        const currentDate = new Date(Date.now())
+        const currentDate = new Date(Date.now());
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
 
-        const currentYear = currentDate.getFullYear()
+        const birthYear = dob.getFullYear();
+        const birthMonth = dob.getMonth() + 1;
 
-        const currentMonth = currentDate.getMonth() + 1
-        const currentDay = currentDate.getDate()
+        let age = currentYear - birthYear;
 
-        const birthYear = dob.getFullYear()
-        const birthMonth = dob.getMonth() + 1
-        const birthDay = dob.getDate()
-
-        let confirmedAge = (currentYear - birthYear) - 1
-
-        if (birthMonth <= currentMonth) {
-            return confirmedAge + 1
-        }
-        // else if(birthMonth === currentMonth){
-        //     if(birthDay <= currentDay) 
-        //         return confirmedAge + 1
-        //     else 
-        //         return confirmedAge
-        // }
-        else {
-            return confirmedAge
+        // Subtract 1 if birthday hasn't occurred yet this year
+        if (birthMonth > currentMonth) {
+            age--;
         }
 
-
+        return age;
     }
-
-
-    async enrollFreeSession(playerId: string, enrollSessionDto: EnrollSessionDto) {
-
-        const participant = await this.prismaService.$transaction(async prisma => {
-
-            const sessionParticipant = await prisma.sessionParticipant.create({
-                data: {
-                    player_id: playerId,
-                    payment_method: enrollSessionDto.paymentMethod,
-                    session_id: enrollSessionDto.sessionId,
-                    player_status: PlayerStatus.Attending,
-                    payment_status: ParticipantPaymentStatus.Paid
-                }
-            })
-
-
-
-            return sessionParticipant
-
-        })
-
-
-        return participant
-    }
-
 
 
     /**
@@ -695,65 +677,49 @@ export class SessionService {
      * @returns 
      */
     async getEnrolledPlayers(coachId: string, sessionId: string, paginationDto: PaginationDto) {
-
-        const skip = (paginationDto.page - 1) * paginationDto.limit
+        const { skip, take } = this.getPaginationParams(paginationDto);
 
         if (!sessionId || sessionId.includes(":sessionId")) {
-            throw new BadRequestException("session id is required")
+            throw new BadRequestException("session id is required");
         }
 
         const [enrolledPlayer, total] = await this.prismaService.$transaction([
-
             this.prismaService.sessionParticipant.findMany({
-
                 where: { session: { coach_id: coachId, id: sessionId }, player_status: PlayerStatus.Attending },
                 orderBy: { createdAt: "desc" },
                 include: { player: true, session: true },
                 skip,
-                take: paginationDto.limit
+                take
             }),
-
             this.prismaService.sessionParticipant.count({
-
                 where: { session: { coach_id: coachId, id: sessionId }, player_status: PlayerStatus.Attending },
-
             })
+        ]);
 
-        ])
-
-        return { players: enrolledPlayer, total }
-
+        return { players: enrolledPlayer, total };
     }
 
     async getEnrolledPlayersForAdmin(adminId: string, sessionId: string, paginationDto: PaginationDto) {
-
-        const skip = (paginationDto.page - 1) * paginationDto.limit
+        const { skip, take } = this.getPaginationParams(paginationDto);
 
         if (!sessionId || sessionId.includes(":sessionId")) {
-            throw new BadRequestException("session id is required")
+            throw new BadRequestException("session id is required");
         }
 
         const [enrolledPlayer, total] = await this.prismaService.$transaction([
-
             this.prismaService.sessionParticipant.findMany({
-
                 where: { session: { id: sessionId }, player_status: PlayerStatus.Attending },
                 orderBy: { createdAt: "desc" },
                 include: { player: true, session: true },
                 skip,
-                take: paginationDto.limit
+                take
             }),
-
             this.prismaService.sessionParticipant.count({
-
                 where: { session: { id: sessionId }, player_status: PlayerStatus.Attending },
-
             })
+        ]);
 
-        ])
-
-        return { players: enrolledPlayer, total }
-
+        return { players: enrolledPlayer, total };
     }
 
 
@@ -764,34 +730,26 @@ export class SessionService {
      * @returns 
      */
     async getCancelledPlayer(coachId: string, sessionId: string, paginationDto: PaginationDto) {
-
-        const skip = (paginationDto.page - 1) * paginationDto.limit
+        const { skip, take } = this.getPaginationParams(paginationDto);
 
         if (!sessionId || sessionId.includes(":sessionId")) {
-            throw new BadRequestException("session id is required")
+            throw new BadRequestException("session id is required");
         }
 
         const [cancelledPlayers, total] = await this.prismaService.$transaction([
             this.prismaService.sessionParticipant.findMany({
-
                 where: { session: { coach_id: coachId, id: sessionId }, player_status: PlayerStatus.Cancelled },
                 orderBy: { createdAt: "desc" },
-
                 include: { player: true, session: true },
                 skip,
-                take: paginationDto.limit
+                take
             }),
-
             this.prismaService.sessionParticipant.count({
-
                 where: { session: { coach_id: coachId, id: sessionId }, player_status: PlayerStatus.Cancelled },
-
             })
+        ]);
 
-        ])
-
-        return { players: cancelledPlayers, total }
-
+        return { players: cancelledPlayers, total };
     }
 
 
@@ -827,10 +785,15 @@ export class SessionService {
      * @returns boolean
      */
     private async isPlayerAlreadyEnrolled(playerId: string, sessionId: string) {
-
-        const participant = await this.prismaService.sessionParticipant.count({ where: { player_id: playerId, session_id: sessionId, player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } })
-
-        return participant > 0 ? true : false
+        const participant = await this.prismaService.sessionParticipant.count({
+            where: {
+                player_id: playerId,
+                session_id: sessionId,
+                player_status: PlayerStatus.Attending,
+                payment_status: ParticipantPaymentStatus.Paid
+            }
+        });
+        return participant > 0;
     }
 
     /**
@@ -841,8 +804,7 @@ export class SessionService {
      */
 
     async getPlayerEnrolledSessions(userId: string, getPlayerSessionDto: GetPlayerEnrolledSessionDto, pagination: PaginationDto) {
-
-        const skip = (pagination.page - 1) * pagination.limit
+        const { skip, take } = this.getPaginationParams(pagination);
 
 
         if (getPlayerSessionDto.status === SessionStatus.COMPLETED) {
@@ -855,7 +817,7 @@ export class SessionService {
                     },
                     include: { coach: true },
                     skip,
-                    take: pagination.limit,
+                    take,
                     orderBy: { completed_at: "desc" }
                 }),
 
@@ -879,7 +841,7 @@ export class SessionService {
                     where: { participants: { some: { player_id: userId, player_status: PlayerStatus.Attending } }, status: SessionStatus.CREATED },
                     include: { coach: true },
                     skip,
-                    take: pagination.limit,
+                    take,
                     orderBy: { started_at: "desc" }
                 }),
 
@@ -908,7 +870,7 @@ export class SessionService {
                     where: { participants: { some: { player_id: userId, player_status: PlayerStatus.Cancelled } } },
                     include: { coach: true },
                     skip,
-                    take: pagination.limit
+                    take,
                 }),
 
                 this.prismaService.session.count({
@@ -925,7 +887,7 @@ export class SessionService {
                 where: { participants: { some: { player_id: userId, player_status: PlayerStatus.Attending } }, status: getPlayerSessionDto.status },
                 include: { coach: true },
                 skip,
-                take: pagination.limit
+                take,
             }),
 
             this.prismaService.session.count({
@@ -976,8 +938,7 @@ export class SessionService {
     }
 
     async getAllSessions(query: SessionQueryDto) {
-
-        const skip = (query.page - 1) * query.limit
+        const { skip, take } = this.getPaginationParams(query);
 
         const [sessions, total] = await Promise.all([
             this.prismaService.session.findMany({
@@ -986,7 +947,7 @@ export class SessionService {
                 orderBy: { createdAt: "desc" },
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending } } } }, coach: true },
                 skip,
-                take: query.limit,
+                take,
             }),
             this.prismaService.session.count()
         ])

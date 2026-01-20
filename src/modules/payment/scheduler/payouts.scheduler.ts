@@ -11,79 +11,88 @@ export class PayoutScheduler {
 
     private readonly logger = new Logger(PayoutScheduler.name)
 
-    constructor(private readonly prismaService:PrismaService, private readonly notificationService:NotificationService,
-        private readonly stripeProvider:StripeProvider
-    ){}
+    constructor(private readonly prismaService: PrismaService, private readonly notificationService: NotificationService,
+        private readonly stripeProvider: StripeProvider
+    ) { }
 
     @Cron(CronExpression.EVERY_10_SECONDS)
-    async payoutsWatcher(){
+    async payoutsWatcher() {
         this.logger.log("payout scheduler running...")
-         const sessions = await this.prismaService.session.findMany({where:{status:SessionStatus.COMPLETED}, include:{coach:true}})
-         sessions.forEach(async session => {
-            
+        const sessions = await this.prismaService.session.findMany({ where: { status: SessionStatus.COMPLETED }, include: { coach: true } })
+        sessions.forEach(async session => {
+
             await this.createPayout(session)
-         })
+        })
 
         this.logger.log("payout scheduler exiting...")
 
     }
 
-    async createPayout(session:Session){
+    async createPayout(session: Session) {
 
         //check does payout already created
-        const payout = await this.prismaService.duePayouts.findFirst({where:{
-            session_id:session.id
-        }})
+        const payout = await this.prismaService.duePayouts.findFirst({
+            where: {
+                session_id: session.id
+            }
+        })
 
         //if payout does not created yet, check the session to create payout
-        if(!payout){
+        if (!payout) {
 
             //does the session has any pending refund reequest
             //if yes ignore that session
             const refundRequest = await this.prismaService.refundRequest.findMany({
-                where:{session_id:session.id, status:RefundRequestStatus.Pending}})
-            
+                where: { session_id: session.id, status: RefundRequestStatus.Pending }
+            })
+
             //if no pending session in the db
             //calculate the payout amount 
-            if(refundRequest.length <= 0){
+            if (refundRequest.length <= 0) {
 
                 const paidParticipant = await this.prismaService.sessionParticipant.findMany({
-                    where:{session_id:session.id, player_status:PlayerStatus.Attending, payment_status:ParticipantPaymentStatus.Paid}
+                    where: { session_id: session.id, player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid }
                 })
 
                 const session_fee = session.fee
                 const totalparticipatedPlayer = paidParticipant.length
-                
+
                 const totalPayableAmount = session_fee * totalparticipatedPlayer
 
-                const payout = await this.prismaService.duePayouts.create({data:{
-                    total_amount:totalPayableAmount,
-                    coach_id:session.coach_id,
-                    session_id:session.id,
-                }})
+                const payout = await this.prismaService.duePayouts.create({
+                    data: {
+                        total_amount: totalPayableAmount,
+                        coach_id: session.coach_id,
+                        session_id: session.id,
+                    }
+                })
 
                 // this.stripeProvider.transfer(payout.total_amount, )
+                try {
+                    this.notificationService.createNotification({
+                        audience: Audience.USER,
+                        level: NotificationLevel.INFO,
+                        title: "Payout created",
+                        message: `Payout created for session ${session.title}`,
+                        userId: session.coach_id
+                    })
 
-                this.notificationService.createNotification({
-                    audience:Audience.USER,
-                    level:NotificationLevel.INFO,
-                    title:"Payout created",
-                    message:`Payout created for session ${session.title}`,
-                    userId:session.coach_id
-                })
+                } catch (err) {
+                    console.log("Notification sending failed: ", err)
+                }
 
             }
         }
-        
+
     }
 
 
-    async calculateRefundAmount(sessionId:string){
-        const refundRequest = await this.prismaService.refundRequest.findMany({where:{session_id:sessionId, status:RefundRequestStatus.Accepted}})
+    async calculateRefundAmount(sessionId: string) {
+        const refundRequest = await this.prismaService.refundRequest.findMany({ where: { session_id: sessionId, status: RefundRequestStatus.Accepted } })
         return refundRequest
     }
 
-    async releasePayout(){
+    async releasePayout() {
 
     }
 
