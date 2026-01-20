@@ -167,7 +167,9 @@ export class UserService {
             return { ...rest, is_subscription_active: isSubscriptionActive, current_subscription_end_at, total_created_sessions, total_canceled_sessions }
         })
 
-        return { users: mappedUsers, page: query.page, limit: query.limit, total, pages: Math.ceil(total / query.limit) }
+        const resolvedUsers = await Promise.all(mappedUsers)
+
+        return { users: resolvedUsers, page: query.page, limit: query.limit, total, pages: Math.ceil(total / query.limit) }
 
     }
 
