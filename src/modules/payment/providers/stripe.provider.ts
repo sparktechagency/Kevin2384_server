@@ -146,6 +146,10 @@ export class StripeProvider {
         }
         const paymentIntent = await this.stripeCLient.paymentIntents.retrieve(payment.stripe_intent_id!)
 
+        if (!paymentIntent) {
+            throw new Error("Payment intent not found")
+        }
+
         const refund = await this.stripeCLient.refunds.create({
             payment_intent: paymentIntent.id,
             amount: amount,
@@ -156,12 +160,12 @@ export class StripeProvider {
             }
         })
 
-        await this.prismaService.payment.update({
-            where: { id: paymentId },
-            data: {
-                status: PaymentStatus.Refunded
-            }
-        })
+        // await this.prismaService.payment.update({
+        //     where: { id: paymentId },
+        //     data: {
+        //         status: PaymentStatus.Refunded
+        //     }
+        // })
     }
 
     async handleWebhook(stripe_signature: string, req: RawBodyRequest<Request>) {
