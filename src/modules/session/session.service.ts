@@ -264,7 +264,7 @@ export class SessionService {
                 skip,
                 take,
                 include: {
-                    _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } }
+                    _count: { select: { participants: { where: { player_status: PlayerStatus.Attending } } } }
                 }
             }),
             this.prismaService.session.count({
