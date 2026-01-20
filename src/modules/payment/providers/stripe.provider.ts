@@ -230,7 +230,49 @@ export class StripeProvider {
                         this.prismaService.sessionParticipant.update({ where: { id: participantId }, data: { payment_status: ParticipantPaymentStatus.Failed, player_status: PlayerStatus.Cancelled } })
                     ])
 
-                    break
+                    break;
+                }
+                case "charge.refund.updated": {
+                    // Handle refund success
+                    const refund = event.data.object;
+                    const { paymentId, participantId, sessionId } = refund.metadata as MetaData;
+
+                    if (refund.status === "succeeded") {
+                        // Update payment status to refunded
+                        await this.prismaService.payment.update({
+                            where: { id: paymentId },
+                            data: { status: PaymentStatus.Refunded }
+                        });
+
+                        // Get participant and session details for notification
+                        const [participant, session] = await Promise.all([
+                            this.prismaService.sessionParticipant.findUnique({
+                                where: { id: participantId },
+                                include: { player: true }
+                            }),
+                            this.prismaService.session.findUnique({
+                                where: { id: sessionId }
+                            })
+                        ]);
+
+                        // Send notification to player
+                        if (participant && session) {
+                            this.notificationService.createNotification({
+                                audience: Audience.USER,
+                                userId: participant.player_id,
+                                level: NotificationLevel.INFO,
+                                title: "Refund Processed",
+                                message: `Your refund for session "${session.title}" has been processed successfully. The amount will be credited to your account within 5-10 business days.`
+                            });
+                        }
+
+                        console.log(`Refund succeeded for payment ${paymentId}, amount: ${refund.amount / 100}`);
+                    } else if (refund.status === "failed") {
+                        console.error(`Refund failed for payment ${paymentId}`);
+                        // Optionally handle failed refunds
+                    }
+
+                    break;
                 }
                 default:
 
