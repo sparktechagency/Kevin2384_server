@@ -3,7 +3,7 @@ import { SessionBuilder } from "./providers/SessionBuilder.provider";
 import { CreateSessionDto } from "./dtos/create-session.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { PaginationDto } from "src/common/dtos/pagination.dto";
-import { Audience, NotificationLevel, ParticipantPaymentStatus, PaymentMethod, PaymentType, PlayerStatus, SessionStatus, SessionType } from "generated/prisma/enums";
+import { Audience, NotificationLevel, ParticipantPaymentStatus, PaymentMethod, PaymentType, PlayerStatus, RefundRequestStatus, SessionStatus, SessionType } from "generated/prisma/enums";
 import { EnrollSessionDto } from "./dtos/enroll-session.dto";
 import { UpdateSessionDto } from "./dtos/update-session.dto";
 import { CancelSessionDto } from "./dtos/cancel-session.dto";
@@ -915,6 +915,7 @@ export class SessionService {
         const refundRequest = await this.prismaService.refundRequest.findFirst({
             where: {
                 session_id: session.id,
+                status: RefundRequestStatus.Pending,
                 participant: { player_id: userId }
             }
         })
