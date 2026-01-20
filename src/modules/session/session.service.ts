@@ -983,7 +983,7 @@ export class SessionService {
             this.prismaService.session.findMany({
                 where: { coach: { fullName: { contains: query.query, mode: 'insensitive' } } },
 
-                orderBy: { started_at: "asc" },
+                orderBy: { createdAt: "desc" },
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending } } } }, coach: true },
                 skip,
                 take: query.limit,
