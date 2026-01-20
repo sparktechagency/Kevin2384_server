@@ -162,9 +162,9 @@ export class UserService {
             const isSubscriptionActive = subscriptions.some(sub => sub.status === "ACTIVE")
             const current_subscription_end_at = isSubscriptionActive ? subscriptions[0].current_period_end : null
             const total_created_sessions = _count.created_sessions
-            const total_canceled_sessions = await this.prismaService.session.count({ where: { coach_id: user.id, status: SessionStatus.CANCELLED } })
+            const total_cancelled_sessions = await this.prismaService.session.count({ where: { coach_id: user.id, status: SessionStatus.CANCELLED } })
 
-            return { ...rest, is_subscription_active: isSubscriptionActive, current_subscription_end_at, total_created_sessions, total_canceled_sessions }
+            return { ...rest, is_subscription_active: isSubscriptionActive, current_subscription_end_at, total_created_sessions, total_cancelled_sessions }
         })
 
         const resolvedUsers = await Promise.all(mappedUsers)
