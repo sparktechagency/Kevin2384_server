@@ -198,7 +198,13 @@ export class SessionService {
             [this.prismaService.session.findMany({
                 where: {
                     title: { contains: sessionQuery.query, mode: "insensitive" },
-                    participants: { none: { player_id: userId, player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } },
+                    participants: {
+                        none: {
+                            player_id: userId, player_status: PlayerStatus.Attending, OR: [{ payment_status: ParticipantPaymentStatus.Paid }, {
+                                payment_status: ParticipantPaymentStatus.Cash
+                            }]
+                        }
+                    },
                     status: SessionStatus.CREATED
                 },
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } } }
