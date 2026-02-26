@@ -210,26 +210,33 @@ export class SessionService {
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } } }
             })])
 
-        const filteredSessions = sessions.filter(session => {
-            const sessionLocation = session.location;
-            if (sessionLocation) {
-                const distance = this.getSessionDistance(
-                    { latitude: sessionQuery.location[0], longitude: sessionQuery.location[1] },
-                    { latitude: sessionLocation["coordinates"][0], longitude: sessionLocation["coordinates"][1] });
+            if (sessionQuery.location){
+                const filteredSessions = sessions.filter(session => {
+                const sessionLocation = session.location;
+                if (sessionLocation) {
+                    const distance = this.getSessionDistance(
+                        { latitude: sessionQuery.location[0], longitude: sessionQuery.location[1] },
+                        { latitude: sessionLocation["coordinates"][0], longitude: sessionLocation["coordinates"][1] });
 
-                const radiusInMeter = sessionQuery.radius * MILES_TO_METERS;
-                return distance <= radiusInMeter;
-            }
-            return false;
-        });
-
-        const slicedSessions = filteredSessions.slice(skip, skip + sessionQuery.limit);
+                    const radiusInMeter = sessionQuery.radius * MILES_TO_METERS;
+                    return distance <= radiusInMeter;
+                }
+                return false;
+                });
+                        const slicedSessions = filteredSessions.slice(skip, skip + sessionQuery.limit);
 
         const mappedSessions = slicedSessions.map(session => {
             return { ...session, left: session.max_participants - session._count.participants };
         });
 
         return { sessions: mappedSessions, total: filteredSessions.length };
+                
+            }
+
+            return {sessions, total: sessions.length}
+       
+
+
     }
 
     private getSessionDistance(

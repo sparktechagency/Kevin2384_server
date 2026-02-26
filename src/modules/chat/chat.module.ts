@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,4 +12,9 @@ import { UserModule } from '../user/user.module';
     providers:[ChatService, PrismaService, SocketGateway],
     exports:[ChatService]
 })
-export class ChatModule {}
+export class ChatModule implements OnModuleInit{
+
+    onModuleInit() {
+        
+    }
+}
