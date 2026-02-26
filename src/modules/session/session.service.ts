@@ -193,7 +193,7 @@ export class SessionService {
      */
     async getSessions(userId: string, sessionQuery: SessionQueryDto) {
         const { skip } = this.getPaginationParams(sessionQuery);
-
+        console.log("get_session_Service", sessionQuery)
         const [sessions] = await this.prismaService.$transaction(
             [this.prismaService.session.findMany({
                 where: {
@@ -209,6 +209,8 @@ export class SessionService {
                 },
                 include: { _count: { select: { participants: { where: { player_status: PlayerStatus.Attending, payment_status: ParticipantPaymentStatus.Paid } } } } }
             })])
+
+            console.log("sessions", sessions)
 
             if (sessionQuery.location){
                 const filteredSessions = sessions.filter(session => {
