@@ -231,11 +231,16 @@ export class SessionService {
             return { ...session, left: session.max_participants - session._count.participants };
         });
 
+     
+
         return { sessions: mappedSessions, total: filteredSessions.length };
                 
             }
+            const mappedSessions = sessions.map(session => {
+                return {...session, left:session.max_participants - session._count.participants}
+            })
 
-            return {sessions, total: sessions.length}
+            return {sessions:mappedSessions, total: sessions.length}
        
 
 
