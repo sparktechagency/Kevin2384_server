@@ -29,7 +29,7 @@ import { AdminCancelStrategy } from "./strategies/AdminCancelStrategy";
 
 // Constants
 const MILES_TO_METERS = 1609.34;
-const UPCOMING_SESSIONS_WINDOW_DAYS = 3;
+const UPCOMING_SESSIONS_WINDOW_DAYS = 7;
 
 @Injectable()
 export class SessionService {
