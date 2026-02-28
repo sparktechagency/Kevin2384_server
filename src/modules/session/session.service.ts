@@ -124,17 +124,17 @@ export class SessionService {
 
         const dates = rrule.all();
 
-        await this.prismaService.$transaction(async prisma => {
-            for (const date of dates) {
-                await prisma.session.create({
+      
+            dates.forEach(async (date) => {
+                await this.prismaService.session.create({
                     data: {
                         ...session_template,
                         started_at: date,
                         completed_at: new Date(date.getTime() + SESSION_CONSTANTS.SESSION_COMPLETE_AFTER_DAYS)
                     }
                 });
-            }
-        });
+            })
+  
     }
 
     /**
