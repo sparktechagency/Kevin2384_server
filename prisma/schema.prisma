@@ -35,6 +35,10 @@ model User {
   created_sessions      Session[]
   stripe_customer_id    String?
 
+  free_trial_started_at     DateTime?
+  free_trial_expires_at       DateTime?
+  free_trial_started             Boolean   @default(false)
+  
   chat_rooms ChatMember[]
 
   sent_chats     Chat[]         @relation(name: "sent_chats")

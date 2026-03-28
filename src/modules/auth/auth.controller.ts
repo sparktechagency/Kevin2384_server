@@ -87,6 +87,7 @@ export class AuthController {
         const tokenpayload = request["payload"] as TokenPayload
 
         const userDetails = await this.authService.getAuthenticatedUser(tokenpayload.id)
+        console.log(userDetails)
 
         return plainToInstance(UserResponseDto, userDetails, {
             excludeExtraneousValues: true

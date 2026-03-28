@@ -72,6 +72,12 @@ export class UserResponseDto {
     })
     total_cancelled_sessions: number
 
+    @Expose()
+    free_trial_expires_at:Date
+
+    @Expose()
+    free_trial_expired:boolean
+
 
 
 }

@@ -91,4 +91,11 @@ export class PaymentController{
         // ...
     }
 
+    
+    @Post("notifications")
+    @Public()
+    async appStoreServerNotificationController(@Body() data:any){
+        console.log(data)
+    }
+
 }

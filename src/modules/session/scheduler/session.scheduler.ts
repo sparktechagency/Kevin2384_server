@@ -1,10 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { Session } from "generated/prisma/client";
-import { ParticipantPaymentStatus, PaymentStatus, RecurringStatus, SessionStatus } from "generated/prisma/enums";
-import { RRule } from "rrule";
+import {  PaymentStatus, SessionStatus } from "generated/prisma/enums";
 import { PrismaService } from "src/modules/prisma/prisma.service";
-import { SESSION_CONSTANTS } from "../constants";
 
 @Injectable()
 export class SessionScheduler{

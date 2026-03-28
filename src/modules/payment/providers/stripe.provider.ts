@@ -27,9 +27,7 @@ export class StripeProvider {
             throw new Error("Stripe intialization failed. Please provde stripe secret key.")
         }
 
-        this.stripeCLient = new Stripe(stripeCOnfiguration.stripe_key, {
-            apiVersion: "2025-11-17.clover"
-        })
+        this.stripeCLient = new Stripe(stripeCOnfiguration.stripe_key)
     }
 
 

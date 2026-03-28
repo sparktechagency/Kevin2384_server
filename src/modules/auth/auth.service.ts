@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Injectable, Logger, NotFoundException, Res, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Inject, Injectable, Logger, NotFoundException, Res, UnauthorizedException } from "@nestjs/common";
 import { SigninDto } from "./dtos/signin.dto";
 import { RegisterUserDto } from "./dtos/register-user.dto";
 import { UserService } from "../user/user.service";
@@ -8,7 +8,8 @@ import { OtpFor, OtpStatus } from "generated/prisma/browser";
 import { PrismaService } from "../prisma/prisma.service";
 import emailVerificationTemplate from "src/common/templates/emailVerification.template";
 import { JwtService } from "@nestjs/jwt";
-import { User } from "generated/prisma/client";
+import { User, UserRole } from "generated/prisma/client";
+import { Cache } from "@nestjs/cache-manager";
 
 
 
@@ -21,7 +22,8 @@ export class AuthService {
          private readonly encoder:EncoderProvider,
           private readonly mailProvider:SMTPProvider,
           private readonly prismaService:PrismaService,
-          private readonly jwtService:JwtService
+          private readonly jwtService:JwtService,
+          @Inject("CACHE_MANAGER")private readonly CacheManager:Cache
         ){}
 
         /**
@@ -32,7 +34,7 @@ export class AuthService {
 
     async signin ( signInDto:SigninDto){
         
-        const user = await this.userService.findUserByEmail(signInDto.email)
+        let user = await this.userService.findUserByEmail(signInDto.email)
 
 
         if(!user){
@@ -59,12 +61,28 @@ export class AuthService {
             return {email_verified:false, message:"A verification code sent to your email. Kindly verify your email first."}
         }
 
+        if (user.role === UserRole.COACH){
+            if(!user.free_trial_started){
+                user = await this.userService.activateTrialPeriod(user.email)
+                Object.defineProperty(user, "first_time_logged_in_after_trial_started", {
+                    value:true,
+                    enumerable:true
+                })
+            }else{
+                if(user.free_trial_expires_at && (user.free_trial_expires_at < new Date(Date.now()))){
+                    return {free_trial_expired:true, free_trial_expires_at:user.free_trial_expires_at}
+                }
+            }
+
+        }
         await this.userService.updateFcmToken(user.id, signInDto.fcm_token)
 
         const token = await this.signJwtToken(user)
         this.logger.log(`${user.fullName} logged in.`)
+        
+        this.CacheManager.set(`user:${user.id}`, user, 3600 )
 
-        return {...user, token}
+        return {...user,free_trial_expired:false, token}
 
     }
     /**
@@ -167,6 +185,7 @@ export class AuthService {
         await this.prismaService.otp.update({where:{id:existingCode.id}, data:{otp_status:OtpStatus.INVALID}})
 
         await this.userService.updateEmailVerificationStatus(email)
+        
 
         return {message:"email verified. Please log in to your account"}
     }
@@ -259,6 +278,18 @@ export class AuthService {
     async getAuthenticatedUser(userId:string){
 
         const userDetails = await this.userService.findUserById(userId)
+
+        if (userDetails?.free_trial_started && ( userDetails.free_trial_expires_at && userDetails.free_trial_expires_at >= new Date(Date.now()))){
+            Object.defineProperty(userDetails, "free_trial_expired", {
+                value:false,
+                enumerable:true
+            })
+        }else {
+            Object.defineProperty(userDetails, "free_trial_expired", {
+                value:true,
+                enumerable:true
+            })
+        }
 
         return userDetails
         

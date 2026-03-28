@@ -216,8 +216,20 @@ export class UserService {
         if (!user) {
             throw new NotFoundException("user not found")
         }
+       
 
         await this.prismaService.user.update({ where: { id: user.id }, data: { email_verified: true } })
+    }
+
+    async activateTrialPeriod(email:string){
+        const user = await this.findUserByEmail(email)
+
+        if(!user){
+            throw  new NotFoundException("User not found")
+        }
+        const sevenDays = 7 * 24  * 60 * 60 * 1000
+
+        return await this.prismaService.user.update({where:{id:user.id}, data:{free_trial_started:true, free_trial_started_at:new Date(Date.now()), free_trial_expires_at:new Date(Date.now() + sevenDays)}})
     }
 
 
@@ -632,6 +644,11 @@ export class UserService {
 
     async updateFcmToken(userId: string, token: string) {
         await this.prismaService.user.update({ where: { id: userId }, data: { fcm_token: token } })
+    }
+
+    async getTrialData(userId:string){
+
+        
     }
 
 }

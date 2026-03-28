@@ -23,5 +23,14 @@ export class SignInResponseDto{
     @Expose()
     token:string
 
+    @Expose()
+    free_trial_expires_at:Date
+
+    @Expose()
+    free_trial_expired:boolean
+    
+    @Expose()
+    first_time_logged_in_after_trial_started:boolean
+
 
 }

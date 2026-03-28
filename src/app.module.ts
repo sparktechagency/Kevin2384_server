@@ -25,11 +25,15 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import jwtConfig from './config/jwt.config';
 import firebaseConfig from './config/firebase.config';
+import {CacheModule} from "@nestjs/cache-manager"
 
 
 
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal:true
+    }),
     ConfigModule.forRoot({isGlobal:true,load:[mailerConfig, stripeConfig, awsConfig, jwtConfig, firebaseConfig]}),
     // BullModule.forRoot({
     //   connection:{
