@@ -190,6 +190,7 @@ export class AuthService {
         return {message:"email verified. Please log in to your account"}
     }
 
+    
     /**
      * 
      * @param email 
